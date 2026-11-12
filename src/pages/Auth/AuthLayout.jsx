@@ -1,8 +1,10 @@
 import { FlaskConical } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import './Auth.css';
 
 function AuthLayout({ title, description, children, footer }) {
+  const { isDemo } = useAuth();
   useDocumentTitle(title);
 
   return (
@@ -16,13 +18,15 @@ function AuthLayout({ title, description, children, footer }) {
             {description && <p className="auth-card__description">{description}</p>}
           </header>
 
-          <div className="auth-demo-notice">
-            <FlaskConical size={18} strokeWidth={1.75} aria-hidden="true" />
-            <p>
-              <strong>Acesso demonstrativo.</strong> As contas ficam salvas apenas neste navegador, a senha não é
-              armazenada nem verificada e nenhum e-mail é enviado. Não utilize senhas reais.
-            </p>
-          </div>
+          {isDemo && (
+            <div className="auth-demo-notice">
+              <FlaskConical size={18} strokeWidth={1.75} aria-hidden="true" />
+              <p>
+                <strong>Acesso demonstrativo.</strong> As contas ficam salvas apenas neste navegador, a senha não é
+                armazenada nem verificada e nenhum e-mail é enviado. Não utilize senhas reais.
+              </p>
+            </div>
+          )}
 
           <div className="auth-card__body">{children}</div>
 

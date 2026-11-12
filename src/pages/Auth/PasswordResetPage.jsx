@@ -11,7 +11,7 @@ import { AUTH_FIELD_LIMITS, ROUTES } from '../../utils/constants';
 import AuthLayout from './AuthLayout';
 
 function PasswordResetPage() {
-  const { requestPasswordReset } = useAuth();
+  const { requestPasswordReset, isDemo } = useAuth();
   const [sentTo, setSentTo] = useState('');
 
   const onSubmit = useCallback(
@@ -41,8 +41,8 @@ function PasswordResetPage() {
       {sentTo ? (
         <div className="auth-signed-in">
           <FormAlert tone="success" title="Solicitação registrada" autoFocus>
-            Se houver uma conta associada a {sentTo}, as instruções serão enviadas para esse endereço. Nesta
-            demonstração nenhum e-mail é enviado de fato.
+            Se houver uma conta associada a {sentTo}, você receberá um e-mail com as instruções para redefinir a senha.{' '}
+            {isDemo ? 'Nesta demonstração nenhum e-mail é enviado de fato.' : 'Confira também a caixa de spam.'}
           </FormAlert>
           <div className="auth-signed-in__actions">
             <Button to={ROUTES.login} variant="secondary" icon={ArrowLeft} iconPosition="start">

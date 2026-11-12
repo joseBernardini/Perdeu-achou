@@ -1,6 +1,6 @@
-import { USER_ROLES } from '../utils/constants';
+import { USER_ROLES } from '../../utils/constants';
 import { createMockAuthService, DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from './mockAuthService';
-import { EmailAlreadyRegisteredError, FormValidationError, InvalidCredentialsError } from './serviceErrors';
+import { EmailAlreadyRegisteredError, FormValidationError, InvalidCredentialsError } from '../serviceErrors';
 
 function createMemoryStorage() {
   const data = {};
@@ -21,6 +21,7 @@ const signUpValues = {
   email: 'Pessoa.Teste@Exemplo.com',
   password: 'senha-demo-123',
   passwordConfirmation: 'senha-demo-123',
+  profileType: 'aluno',
 };
 
 function buildService() {
@@ -38,7 +39,9 @@ describe('mockAuthService', () => {
       id: expect.stringMatching(/^USR-[0-9A-Z]{8}$/),
       name: 'Pessoa de Teste',
       email: 'pessoa.teste@exemplo.com',
-      role: USER_ROLES.member,
+      role: USER_ROLES.user,
+      profileType: 'aluno',
+      active: true,
     });
     expect(service.getCurrentUser()).toEqual(user);
   });
@@ -55,9 +58,9 @@ describe('mockAuthService', () => {
   it('sempre cria contas com o perfil de usuário comum', async () => {
     const { service } = buildService();
 
-    const user = await service.signUp({ ...signUpValues, role: USER_ROLES.staff });
+    const user = await service.signUp({ ...signUpValues, role: USER_ROLES.admin });
 
-    expect(user.role).toBe(USER_ROLES.member);
+    expect(user.role).toBe(USER_ROLES.user);
   });
 
   it('impede contas duplicadas com o mesmo e-mail', async () => {

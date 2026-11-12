@@ -20,6 +20,7 @@ import { formatDateTime } from '../../utils/date';
 import ObjectSummary from './ObjectSummary';
 import RecoveryRequestForm from './RecoveryRequestForm';
 import RecoveryRequestSuccess from './RecoveryRequestSuccess';
+import { getErrorMessage } from '../../utils/errorMessages';
 import './RecoveryRequestPage.css';
 
 const HIDDEN_STATUSES = [OBJECT_STATUS.pendingApproval, OBJECT_STATUS.rejected];
@@ -60,7 +61,7 @@ function RecoveryRequestPage() {
       setView(pending ? { status: 'duplicate', object, request: pending } : { status: 'form', object, request: null });
     } catch (error) {
       if (requestIdRef.current !== requestId) return;
-      setView({ status: error instanceof ObjectNotFoundError ? 'not-found' : 'error', object: null, request: null });
+      setView({ status: error instanceof ObjectNotFoundError ? 'not-found' : 'error', object: null, request: null, error });
     }
   }, [objectId, user]);
 
@@ -144,7 +145,7 @@ function RecoveryRequestPage() {
         tone="error"
         role="alert"
         title="Não foi possível carregar o objeto"
-        description="Ocorreu um problema ao consultar este registro. Tente novamente em alguns instantes."
+        description={getErrorMessage(view.error, 'Ocorreu um problema ao consultar este registro. Tente novamente em alguns instantes.')}
       >
         <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={load}>
           Tentar novamente

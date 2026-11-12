@@ -121,3 +121,39 @@
     padding-inline: var(--space-4);
   }
 }
+
+.auth-profile-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.auth-profile-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.auth-profile-option:has(input:checked) {
+  background-color: var(--color-surface-elevated);
+  border-color: var(--color-primary);
+}
+
+.auth-profile-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.auth-profile-option:has(input[aria-invalid='true']) {
+  border-color: rgba(248, 113, 113, 0.6);
+}

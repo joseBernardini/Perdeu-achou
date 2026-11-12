@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, Menu, PackagePlus, Search, UserRound, X } from 'lucide-react';
+import { LayoutDashboard, LogIn, Menu, PackagePlus, Search, UserRound, X } from 'lucide-react';
 import BrandLogo from '../BrandLogo/BrandLogo';
 import Button from '../Button/Button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,7 @@ import './Header.css';
 
 function Header() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -73,6 +73,17 @@ function Header() {
             >
               Consultar objetos
             </Button>
+            {isAdmin && (
+              <Button
+                to={ROUTES.admin}
+                variant="ghost"
+                size="sm"
+                icon={LayoutDashboard}
+                iconPosition="start"
+              >
+                Painel
+              </Button>
+            )}
             {user ? (
               <Button
                 to={ROUTES.userArea}

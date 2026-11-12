@@ -1,4 +1,4 @@
-import { AUTH_FIELD_LIMITS } from './constants';
+import { AUTH_FIELD_LIMITS, SELECTABLE_PROFILE_TYPES } from './constants';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -57,6 +57,7 @@ export function validateSignUpForm(values = {}) {
     ['email', validateEmail(values.email)],
     ['password', validatePassword(values.password)],
     ['passwordConfirmation', confirmationError],
+    ['profileType', SELECTABLE_PROFILE_TYPES.includes(values.profileType) ? '' : 'Selecione se você é aluno ou funcionário.'],
   ]);
 }
 

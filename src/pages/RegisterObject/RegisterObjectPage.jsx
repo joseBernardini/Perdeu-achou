@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AuthGate from '../../components/AuthGate/AuthGate';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { ROUTES } from '../../utils/constants';
@@ -48,11 +49,16 @@ function RegisterObjectPage() {
 
       <div className="container register-page__body">
         <div className="register-page__main">
-          {createdRecord ? (
-            <RegistrationSuccess record={createdRecord} onRegisterAnother={handleRegisterAnother} />
-          ) : (
-            <RegisterObjectForm key={formKey} onSuccess={handleSuccess} />
-          )}
+          <AuthGate
+            title="Entre na sua conta para registrar um objeto"
+            description="O registro fica vinculado à sua conta para que a equipe responsável possa analisá-lo com segurança."
+          >
+            {createdRecord ? (
+              <RegistrationSuccess record={createdRecord} onRegisterAnother={handleRegisterAnother} />
+            ) : (
+              <RegisterObjectForm key={formKey} onSuccess={handleSuccess} />
+            )}
+          </AuthGate>
         </div>
 
         <aside className="register-page__aside" aria-labelledby="orientacoes-titulo">

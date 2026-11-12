@@ -113,18 +113,28 @@ export const REQUEST_FIELD_LIMITS = {
 };
 
 export const USER_ROLES = {
-  member: 'usuario',
-  staff: 'funcionario',
-  admin: 'administrador',
+  user: 'user',
+  admin: 'admin',
 };
 
 export const USER_ROLE_LABELS = {
-  [USER_ROLES.member]: 'Usuário comum',
-  [USER_ROLES.staff]: 'Funcionário',
+  [USER_ROLES.user]: 'Usuário',
   [USER_ROLES.admin]: 'Administrador',
 };
 
-export const STAFF_ROLES = [USER_ROLES.staff, USER_ROLES.admin];
+export const PROFILE_TYPES = {
+  student: 'aluno',
+  employee: 'funcionario',
+  notInformed: 'nao_informado',
+};
+
+export const PROFILE_TYPE_LABELS = {
+  [PROFILE_TYPES.student]: 'Aluno',
+  [PROFILE_TYPES.employee]: 'Funcionário',
+  [PROFILE_TYPES.notInformed]: 'Não informado',
+};
+
+export const SELECTABLE_PROFILE_TYPES = [PROFILE_TYPES.student, PROFILE_TYPES.employee];
 
 export const OBJECT_REOPEN_TRANSITIONS = {
   [OBJECT_STATUS.returned]: OBJECT_STATUS.available,

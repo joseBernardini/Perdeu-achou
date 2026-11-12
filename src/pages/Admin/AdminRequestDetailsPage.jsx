@@ -75,7 +75,7 @@ function AdminRequestDetailsPage() {
         </>
       );
     }
-    return <AdminLoadError title="Não foi possível carregar a solicitação" onRetry={reload} />;
+    return <AdminLoadError title="Não foi possível carregar a solicitação" error={error} onRetry={reload} />;
   }
 
   const { request, object, otherPendingCount, otherApprovedRequest, events } = data;

@@ -1,4 +1,4 @@
-import mockObjects from '../data/mockObjects';
+import mockObjects from '../services/mock/mockObjects';
 import { OBJECT_STATUS } from './constants';
 import {
   EMPTY_FILTERS,

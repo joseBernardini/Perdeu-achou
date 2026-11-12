@@ -22,7 +22,7 @@ function isValidFilter(key, value) {
 function AdminRequestsPage() {
   const { actor } = useAdminSession();
   const { filters, updateFilter, clearFilters } = useUrlFilters(FILTER_KEYS, isValidFilter);
-  const { status, data, reload } = useAsyncData(() => adminService.listRequests(actor), [actor]);
+  const { status, data, error, reload } = useAsyncData(() => adminService.listRequests(actor), [actor]);
 
   const results = useMemo(
     () => filterAdminRequests(data ?? [], { query: filters.busca, status: filters.status }),
@@ -77,7 +77,7 @@ function AdminRequestsPage() {
         </p>
       )}
 
-      {status === 'error' && <AdminLoadError title="Não foi possível carregar as solicitações" onRetry={reload} />}
+      {status === 'error' && <AdminLoadError title="Não foi possível carregar as solicitações" error={error} onRetry={reload} />}
 
       {data && (
         <>

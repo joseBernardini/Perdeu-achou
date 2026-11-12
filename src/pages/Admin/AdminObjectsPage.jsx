@@ -31,7 +31,7 @@ function isValidFilter(key, value) {
 function AdminObjectsPage() {
   const { actor } = useAdminSession();
   const { filters, updateFilter, clearFilters } = useUrlFilters(FILTER_KEYS, isValidFilter);
-  const { status, data, reload } = useAsyncData(() => adminService.listObjects(actor), [actor]);
+  const { status, data, error, reload } = useAsyncData(() => adminService.listObjects(actor), [actor]);
 
   const results = useMemo(
     () => filterAdminObjects(data ?? [], { query: filters.busca, status: filters.status, category: filters.categoria }),
@@ -104,7 +104,7 @@ function AdminObjectsPage() {
         </p>
       )}
 
-      {status === 'error' && <AdminLoadError title="Não foi possível carregar os objetos" onRetry={reload} />}
+      {status === 'error' && <AdminLoadError title="Não foi possível carregar os objetos" error={error} onRetry={reload} />}
 
       {data && (
         <>

@@ -84,14 +84,14 @@ export class RequestStatusChangeError extends Error {
 
 export class EmailAlreadyRegisteredError extends Error {
   constructor() {
-    super('Já existe uma conta de demonstração com este e-mail.');
+    super('Já existe uma conta cadastrada com este e-mail. Entre na sua conta ou use a recuperação de senha.');
     this.name = 'EmailAlreadyRegisteredError';
   }
 }
 
 export class InvalidCredentialsError extends Error {
   constructor() {
-    super('Não foi possível entrar com os dados informados. Confira o e-mail ou crie uma conta de demonstração.');
+    super('E-mail ou senha incorretos. Confira os dados e tente novamente.');
     this.name = 'InvalidCredentialsError';
   }
 }
@@ -101,5 +101,41 @@ export class StorageUnavailableError extends Error {
     super(message);
     this.name = 'StorageUnavailableError';
     this.cause = cause;
+  }
+}
+
+export class ConfigurationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ConfigurationError';
+  }
+}
+
+export class ConnectionError extends Error {
+  constructor(message = 'Não foi possível se conectar ao servidor. Verifique sua conexão com a internet e tente novamente.') {
+    super(message);
+    this.name = 'ConnectionError';
+  }
+}
+
+export class SessionExpiredError extends Error {
+  constructor(message = 'Sua sessão expirou. Entre novamente para continuar.') {
+    super(message);
+    this.name = 'SessionExpiredError';
+  }
+}
+
+export class AuthError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = 'AuthError';
+    this.code = code;
+  }
+}
+
+export class AccountDisabledError extends Error {
+  constructor() {
+    super('Esta conta está desativada. Procure a administração da instituição.');
+    this.name = 'AccountDisabledError';
   }
 }

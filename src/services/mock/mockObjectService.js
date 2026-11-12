@@ -1,13 +1,13 @@
-import mockObjects from '../data/mockObjects';
-import { OBJECT_REOPEN_TRANSITIONS, OBJECT_STATUS, OBJECT_STATUS_LABELS, OBJECT_STATUS_TRANSITIONS } from '../utils/constants';
-import { generateObjectId, isValidObjectId, normalizeObjectId } from '../utils/objectId';
-import { normalizeObjectForm, validateObjectForm, OBJECT_FORM_FIELDS } from '../utils/objectValidation';
+import mockObjects from './mockObjects';
+import { OBJECT_REOPEN_TRANSITIONS, OBJECT_STATUS, OBJECT_STATUS_LABELS, OBJECT_STATUS_TRANSITIONS } from '../../utils/constants';
+import { generateObjectId, isValidObjectId, normalizeObjectId } from '../../utils/objectId';
+import { normalizeObjectForm, validateObjectForm, OBJECT_FORM_FIELDS } from '../../utils/objectValidation';
 import {
   ObjectNotFoundError,
   ObjectStorageError,
   ObjectUpdateNotAllowedError,
   ObjectValidationError,
-} from './serviceErrors';
+} from '../serviceErrors';
 import { SIMULATED_LATENCY_MS } from './localStore';
 
 export const OBJECTS_STORAGE_KEY = 'perdeu-achou:objetos-registrados:v1';

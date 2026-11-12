@@ -17,7 +17,7 @@ const PREVIEW_LIMIT = 5;
 
 function AdminOverviewPage() {
   const { actor } = useAdminSession();
-  const { status, data, reload } = useAsyncData(async () => {
+  const { status, data, error, reload } = useAsyncData(async () => {
     const [overview, objects, requests, events] = await Promise.all([
       adminService.getOverview(actor),
       adminService.listObjects(actor),
@@ -56,7 +56,7 @@ function AdminOverviewPage() {
         </p>
       )}
 
-      {status === 'error' && <AdminLoadError title="Não foi possível carregar a visão geral" onRetry={reload} />}
+      {status === 'error' && <AdminLoadError title="Não foi possível carregar a visão geral" error={error} onRetry={reload} />}
 
       {data && (
         <>

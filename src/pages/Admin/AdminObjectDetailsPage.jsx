@@ -75,7 +75,7 @@ function AdminObjectDetailsPage() {
         </>
       );
     }
-    return <AdminLoadError title="Não foi possível carregar o objeto" onRetry={reload} />;
+    return <AdminLoadError title="Não foi possível carregar o objeto" error={error} onRetry={reload} />;
   }
 
   const { object, requests, events } = data;

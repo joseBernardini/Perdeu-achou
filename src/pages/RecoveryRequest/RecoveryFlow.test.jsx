@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import mockObjects from '../../data/mockObjects';
-import { RECOVERY_REQUESTS_STORAGE_KEY } from '../../services/mockRecoveryRequestService';
-import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mockAuthService';
+import mockObjects from '../../services/mock/mockObjects';
+import { RECOVERY_REQUESTS_STORAGE_KEY } from '../../services/mock/mockRecoveryRequestService';
+import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mock/mockAuthService';
 import { OBJECT_STATUS, ROUTER_FUTURE_FLAGS } from '../../utils/constants';
 
 const available = mockObjects.find((item) => item.status === OBJECT_STATUS.available);
@@ -19,7 +19,7 @@ function renderAt(path) {
 }
 
 function signInAsDemoUser() {
-  const user = { id: 'USR-AAAA1111', name: 'Pessoa de Teste', email: 'pessoa@exemplo.com', role: 'usuario', createdAt: '2026-11-01T10:00:00.000Z' };
+  const user = { id: 'USR-AAAA1111', name: 'Pessoa de Teste', email: 'pessoa@exemplo.com', role: 'user', createdAt: '2026-11-01T10:00:00.000Z' };
   window.localStorage.setItem(DEMO_USERS_STORAGE_KEY, JSON.stringify([user]));
   window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify({ userId: user.id }));
   return user;
@@ -33,7 +33,7 @@ describe('Fluxo de solicitação de recuperação', () => {
   it('consulta, reconhece o objeto, entra na conta e envia a solicitação', async () => {
     window.localStorage.setItem(
       DEMO_USERS_STORAGE_KEY,
-      JSON.stringify([{ id: 'USR-AAAA1111', name: 'Pessoa de Teste', email: 'pessoa@exemplo.com', role: 'usuario' }])
+      JSON.stringify([{ id: 'USR-AAAA1111', name: 'Pessoa de Teste', email: 'pessoa@exemplo.com', role: 'user' }])
     );
 
     renderAt('/objetos');

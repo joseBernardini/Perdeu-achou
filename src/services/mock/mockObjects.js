@@ -1,4 +1,4 @@
-import { OBJECT_STATUS } from '../utils/constants';
+import { OBJECT_STATUS } from '../../utils/constants';
 
 const mockObjects = [
   {

@@ -1,5 +1,5 @@
-import { ADMIN_EVENT_TYPES, EVENT_ID_PREFIX } from '../utils/constants';
-import { generatePrefixedId, isValidPrefixedId } from '../utils/objectId';
+import { ADMIN_EVENT_TYPES, EVENT_ID_PREFIX } from '../../utils/constants';
+import { generatePrefixedId, isValidPrefixedId } from '../../utils/objectId';
 import { createLocalStore, resolveBrowserStorage } from './localStore';
 
 export const ADMIN_HISTORY_STORAGE_KEY = 'perdeu-achou:historico-administrativo:v1';

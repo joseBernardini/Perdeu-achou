@@ -1,21 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import {
-  ArrowLeft,
-  ClipboardList,
-  FlaskConical,
-  History,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Package,
-  ShieldCheck,
-  X,
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ClipboardList, History, LayoutDashboard, LogOut, Menu, Package, ShieldCheck, X } from 'lucide-react';
+import AuthGate from '../../components/AuthGate/AuthGate';
+import SessionNotice from '../../components/SessionNotice/SessionNotice';
+import { useAuth } from '../../contexts/AuthContext';
 import useScrollToHash from '../../hooks/useScrollToHash';
-import staffSessionService from '../../services/staffSessionService';
 import { APP_NAME, ROUTES, USER_ROLE_LABELS } from '../../utils/constants';
-import AdminEntry from './AdminEntry';
 import './Admin.css';
 
 const NAV_ITEMS = [
@@ -26,10 +16,37 @@ const NAV_ITEMS = [
   { to: ROUTES.adminRoles, label: 'Perfis e permissões', icon: ShieldCheck },
 ];
 
+function AdminGateScreen() {
+  return (
+    <div className="admin-entry">
+      <main className="admin-entry__card" aria-labelledby="painel-acesso-titulo">
+        <p className="admin-entry__app">{APP_NAME}</p>
+        <h1 id="painel-acesso-titulo" className="admin-entry__title">
+          Painel administrativo
+        </h1>
+        <p className="admin-entry__lead">
+          Área dos administradores responsáveis pela análise dos objetos encontrados e das solicitações de recuperação.
+        </p>
+        <AuthGate
+          requireAdmin
+          title="Entre com uma conta de administrador"
+          description="O acesso ao painel exige uma conta com o papel de administrador."
+        />
+        <Link to={ROUTES.home} className="admin-entry__back">
+          <ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />
+          Voltar ao site
+        </Link>
+      </main>
+    </div>
+  );
+}
+
 function AdminLayout() {
   const location = useLocation();
-  const [session, setSession] = useState(() => staffSessionService.getSession());
+  const navigate = useNavigate();
+  const { user, isAdmin, signOut } = useAuth();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useScrollToHash();
 
@@ -46,16 +63,24 @@ function AdminLayout() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isNavOpen]);
 
-  const startDemo = useCallback((options) => setSession(staffSessionService.startSession(options)), []);
+  const outletContext = useMemo(
+    () => (user ? { actor: { id: user.id, role: user.role }, session: { role: user.role, displayName: user.name } } : null),
+    [user]
+  );
 
-  const endDemo = useCallback(() => {
-    staffSessionService.endSession();
-    setSession(null);
-  }, []);
-
-  if (!session) {
-    return <AdminEntry onStart={startDemo} />;
+  if (!user || !isAdmin) {
+    return <AdminGateScreen />;
   }
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      navigate(ROUTES.home);
+    } catch {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <div className={`admin${isNavOpen ? ' admin--nav-open' : ''}`}>
@@ -79,25 +104,21 @@ function AdminLayout() {
             <span className="admin-header__app">{APP_NAME}</span>
             <span className="admin-header__area">Painel administrativo</span>
           </Link>
-          <span className="admin-header__badge">
-            <FlaskConical size={14} strokeWidth={2} aria-hidden="true" />
-            Demonstração
-          </span>
         </div>
 
         <div className="admin-header__session">
           <div className="admin-header__actor">
-            <span className="admin-header__actor-name">{session.displayName}</span>
-            <span className="admin-header__actor-role">
-              {USER_ROLE_LABELS[session.role]} · <span className="admin-header__mono">{session.actorId}</span>
-            </span>
+            <span className="admin-header__actor-name">{user.name}</span>
+            <span className="admin-header__actor-role">{USER_ROLE_LABELS[user.role]}</span>
           </div>
-          <button type="button" className="admin-header__exit" onClick={endDemo}>
+          <button type="button" className="admin-header__exit" onClick={handleSignOut} disabled={isSigningOut}>
             <LogOut size={18} strokeWidth={1.75} aria-hidden="true" />
-            <span>Sair da demonstração</span>
+            <span>{isSigningOut ? 'Saindo' : 'Sair'}</span>
           </button>
         </div>
       </header>
+
+      <SessionNotice />
 
       <div className="admin__body">
         {isNavOpen && <div className="admin__backdrop" onClick={() => setIsNavOpen(false)} aria-hidden="true" />}
@@ -122,15 +143,7 @@ function AdminLayout() {
         </nav>
 
         <main id="conteudo-painel" className="admin__main" tabIndex={-1}>
-          <div className="admin-demo-banner" role="note">
-            <FlaskConical size={18} strokeWidth={1.75} aria-hidden="true" />
-            <p>
-              <strong>Ambiente de demonstração.</strong> Os dados ficam salvos apenas neste navegador e o perfil escolhido
-              na entrada não é um mecanismo de segurança. A autorização real dos funcionários será implementada
-              posteriormente.
-            </p>
-          </div>
-          <Outlet context={{ session, actor: session.actor }} />
+          <Outlet context={outletContext} />
         </main>
       </div>
     </div>

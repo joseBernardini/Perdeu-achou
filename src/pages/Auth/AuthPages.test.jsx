@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import { DEMO_USERS_STORAGE_KEY } from '../../services/mockAuthService';
+import { DEMO_USERS_STORAGE_KEY } from '../../services/mock/mockAuthService';
 import { ROUTER_FUTURE_FLAGS } from '../../utils/constants';
 
 function renderAt(path) {
@@ -32,7 +32,10 @@ describe('Telas de autenticação demonstrativa', () => {
     expect(screen.getByLabelText('Nome')).toHaveAccessibleDescription('Informe seu nome.');
     expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-invalid', 'true');
 
+    expect(screen.getByRole('radio', { name: 'Aluno' })).toHaveAttribute('aria-invalid', 'true');
+
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Pessoa de Teste' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Funcionário' }));
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'pessoa@exemplo.com' } });
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-demo-123' } });
     fireEvent.change(screen.getByLabelText('Confirme a senha'), { target: { value: 'senha-diferente' } });
@@ -46,22 +49,24 @@ describe('Telas de autenticação demonstrativa', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Minha área' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Minha área' })).toBeInTheDocument();
     expect(window.localStorage.getItem(DEMO_USERS_STORAGE_KEY)).not.toContain('senha-demo-123');
+    expect(JSON.parse(window.localStorage.getItem(DEMO_USERS_STORAGE_KEY))[0]).toMatchObject({ role: 'user', profileType: 'funcionario' });
   });
 
   it('informa quando o e-mail já possui conta', async () => {
     window.localStorage.setItem(
       DEMO_USERS_STORAGE_KEY,
-      JSON.stringify([{ id: 'USR-AAAA1111', name: 'Pessoa', email: 'pessoa@exemplo.com', role: 'usuario' }])
+      JSON.stringify([{ id: 'USR-AAAA1111', name: 'Pessoa', email: 'pessoa@exemplo.com', role: 'user' }])
     );
     renderAt('/cadastro');
 
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Outra pessoa' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Aluno' }));
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'pessoa@exemplo.com' } });
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-demo-123' } });
     fireEvent.change(screen.getByLabelText('Confirme a senha'), { target: { value: 'senha-demo-123' } });
     fireEvent.click(screen.getByRole('button', { name: 'Criar conta' }));
 
-    expect(await screen.findByText('Já existe uma conta de demonstração com este e-mail.')).toBeInTheDocument();
+    expect(await screen.findByText(/Já existe uma conta cadastrada com este e-mail/)).toBeInTheDocument();
   });
 
   it('informa quando não é possível entrar', async () => {

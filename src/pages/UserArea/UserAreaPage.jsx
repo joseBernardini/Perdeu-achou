@@ -9,6 +9,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import recoveryRequestService from '../../services/recoveryRequestService';
 import { ROUTES } from '../../utils/constants';
 import RequestCard from './RequestCard';
+import { getErrorMessage } from '../../utils/errorMessages';
 import './UserAreaPage.css';
 
 function UserAreaPage() {
@@ -32,9 +33,9 @@ function UserAreaPage() {
       const requests = await recoveryRequestService.listRequestsByRequester(user.id);
       if (requestIdRef.current !== requestId) return;
       setState({ status: 'success', requests });
-    } catch {
+    } catch (error) {
       if (requestIdRef.current !== requestId) return;
-      setState({ status: 'error', requests: [] });
+      setState({ status: 'error', requests: [], error });
     }
   }, [user]);
 
@@ -120,7 +121,7 @@ function UserAreaPage() {
             role="alert"
             headingLevel={3}
             title="Não foi possível carregar suas solicitações"
-            description="Ocorreu um problema ao consultar os registros. Tente novamente em alguns instantes."
+            description={getErrorMessage(state.error, 'Ocorreu um problema ao consultar os registros. Tente novamente em alguns instantes.')}
           >
             <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={loadRequests}>
               Tentar novamente

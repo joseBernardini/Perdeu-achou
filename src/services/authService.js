@@ -1,5 +1,5 @@
-import mockAuthService from './mockAuthService';
+import firebaseAuthService from './firebase/firebaseAuthService';
 
-const authService = mockAuthService;
+const authService = firebaseAuthService;
 
 export default authService;

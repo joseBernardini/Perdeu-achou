@@ -1,13 +1,13 @@
-import mockObjects from '../data/mockObjects';
-import { OBJECT_STATUS } from '../utils/constants';
-import { isValidObjectId } from '../utils/objectId';
+import mockObjects from './mockObjects';
+import { OBJECT_STATUS } from '../../utils/constants';
+import { isValidObjectId } from '../../utils/objectId';
 import { canTransitionStatus, createMockObjectService, OBJECTS_STORAGE_KEY } from './mockObjectService';
 import {
   ObjectNotFoundError,
   ObjectStorageError,
   ObjectUpdateNotAllowedError,
   ObjectValidationError,
-} from './serviceErrors';
+} from '../serviceErrors';
 
 function createMemoryStorage(initial = {}) {
   const data = { ...initial };

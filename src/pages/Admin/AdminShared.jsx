@@ -5,6 +5,7 @@ import StatePanel from '../../components/StatePanel/StatePanel';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { ADMIN_EVENT_LABELS, OBJECT_STATUS_LABELS, REQUEST_STATUS_LABELS, USER_ROLE_LABELS } from '../../utils/constants';
 import { formatDateTime } from '../../utils/date';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export function useAdminSession() {
   return useOutletContext();
@@ -30,14 +31,14 @@ export function AdminPageHeader({ title, lead, back, children }) {
   );
 }
 
-export function AdminLoadError({ title, onRetry }) {
+export function AdminLoadError({ title, error, onRetry }) {
   return (
     <StatePanel
       icon={CircleAlert}
       tone="error"
       role="alert"
       title={title}
-      description="Ocorreu um problema ao consultar os dados locais. Tente novamente."
+      description={getErrorMessage(error, 'Ocorreu um problema ao consultar os dados. Tente novamente.')}
     >
       <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={() => onRetry()}>
         Tentar novamente

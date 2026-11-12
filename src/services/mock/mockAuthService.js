@@ -1,8 +1,8 @@
-import { USER_ID_PREFIX, USER_ROLES } from '../utils/constants';
-import { normalizeEmail, normalizeName, validatePasswordResetForm, validateSignInForm, validateSignUpForm } from '../utils/authValidation';
-import { generatePrefixedId, isValidPrefixedId } from '../utils/objectId';
+import { USER_ID_PREFIX, USER_ROLES } from '../../utils/constants';
+import { normalizeEmail, normalizeName, validatePasswordResetForm, validateSignInForm, validateSignUpForm } from '../../utils/authValidation';
+import { generatePrefixedId, isValidPrefixedId } from '../../utils/objectId';
 import { SIMULATED_LATENCY_MS, createLocalStore, resolveBrowserStorage, wait } from './localStore';
-import { EmailAlreadyRegisteredError, FormValidationError, InvalidCredentialsError } from './serviceErrors';
+import { EmailAlreadyRegisteredError, FormValidationError, InvalidCredentialsError } from '../serviceErrors';
 
 export const DEMO_USERS_STORAGE_KEY = 'perdeu-achou:usuarios-demonstracao:v1';
 export const DEMO_SESSION_STORAGE_KEY = 'perdeu-achou:sessao-demonstracao:v1';
@@ -20,7 +20,9 @@ function isStoredUser(user) {
 }
 
 function toPublicUser(user) {
-  return user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null;
+  return user
+    ? { id: user.id, name: user.name, email: user.email, role: user.role, profileType: user.profileType ?? null, active: user.active !== false }
+    : null;
 }
 
 export function createMockAuthService({
@@ -87,7 +89,9 @@ export function createMockAuthService({
       id,
       name: normalizeName(values.name),
       email,
-      role: USER_ROLES.member,
+      role: USER_ROLES.user,
+      profileType: values.profileType,
+      active: true,
       createdAt: now().toISOString(),
     };
 
@@ -138,6 +142,7 @@ export function createMockAuthService({
 
   return {
     isDemo: IS_DEMO_AUTH,
+    configurationError: null,
     getUserSummaries,
     getCurrentUser,
     onAuthStateChanged,

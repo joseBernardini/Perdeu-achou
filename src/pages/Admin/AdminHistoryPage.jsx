@@ -32,7 +32,7 @@ function describeChange(event) {
 function AdminHistoryPage() {
   const { actor } = useAdminSession();
   const { filters, updateFilter } = useUrlFilters(FILTER_KEYS, isValidFilter);
-  const { status, data, reload } = useAsyncData(
+  const { status, data, error, reload } = useAsyncData(
     () => adminService.listHistory(actor, { type: filters.tipo || undefined }),
     [actor, filters.tipo]
   );
@@ -71,7 +71,7 @@ function AdminHistoryPage() {
         </p>
       )}
 
-      {status === 'error' && <AdminLoadError title="Não foi possível carregar o histórico" onRetry={reload} />}
+      {status === 'error' && <AdminLoadError title="Não foi possível carregar o histórico" error={error} onRetry={reload} />}
 
       {data && data.length === 0 && (
         <div className="admin-panel">

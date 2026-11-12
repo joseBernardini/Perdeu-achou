@@ -1,5 +1,5 @@
-import mockObjects from '../data/mockObjects';
-import { OBJECT_STATUS, REQUEST_STATUS, USER_ROLES } from '../utils/constants';
+import mockObjects from './mockObjects';
+import { OBJECT_STATUS, REQUEST_STATUS, USER_ROLES } from '../../utils/constants';
 import { createMockObjectService } from './mockObjectService';
 import { canTransitionRequestStatus, createMockRecoveryRequestService, RECOVERY_REQUESTS_STORAGE_KEY } from './mockRecoveryRequestService';
 import {
@@ -9,7 +9,7 @@ import {
   ObjectUnavailableError,
   PermissionDeniedError,
   RequestStatusChangeError,
-} from './serviceErrors';
+} from '../serviceErrors';
 
 function createMemoryStorage() {
   const data = {};
@@ -31,7 +31,7 @@ const pendingObject = mockObjects.find((item) => item.status === OBJECT_STATUS.p
 
 const REQUESTER = 'USR-AAAA1111';
 const OTHER_USER = 'USR-BBBB2222';
-const staff = { id: 'USR-CCCC3333', role: USER_ROLES.staff };
+const staff = { id: 'USR-CCCC3333', role: USER_ROLES.admin };
 
 const validInput = {
   objectId: available.id,
@@ -140,10 +140,10 @@ describe('mockRecoveryRequestService', () => {
     const request = await service.createRequest(validInput, { requesterId: REQUESTER });
 
     await expect(
-      service.changeRequestStatus(request.id, REQUEST_STATUS.approved, { actor: { id: REQUESTER, role: USER_ROLES.member } })
+      service.changeRequestStatus(request.id, REQUEST_STATUS.approved, { actor: { id: REQUESTER, role: USER_ROLES.user } })
     ).rejects.toBeInstanceOf(PermissionDeniedError);
     await expect(
-      service.changeRequestStatus(request.id, REQUEST_STATUS.approved, { actor: { id: REQUESTER, role: USER_ROLES.staff } })
+      service.changeRequestStatus(request.id, REQUEST_STATUS.approved, { actor: { id: REQUESTER, role: USER_ROLES.admin } })
     ).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 

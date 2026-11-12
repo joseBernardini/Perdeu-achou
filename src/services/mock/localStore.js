@@ -1,4 +1,4 @@
-import { StorageUnavailableError } from './serviceErrors';
+import { StorageUnavailableError } from '../serviceErrors';
 
 export const SIMULATED_LATENCY_MS = process.env.NODE_ENV === 'test' ? 0 : 450;
 

@@ -1,5 +1,5 @@
-import mockAdminService from './mockAdminService';
+import firebaseAdminService from './firebase/firebaseAdminService';
 
-const adminService = mockAdminService;
+const adminService = firebaseAdminService;
 
 export default adminService;

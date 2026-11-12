@@ -12,6 +12,7 @@ import { ObjectNotFoundError } from '../../services/serviceErrors';
 import { OBJECT_STATUS, PUBLIC_OBJECT_STATUSES, ROUTES } from '../../utils/constants';
 import { formatDateTime, formatISODate } from '../../utils/date';
 import RecoveryActionPanel from './RecoveryActionPanel';
+import { getErrorMessage } from '../../utils/errorMessages';
 import './ObjectDetailsPage.css';
 
 const CLOSED_STATUSES = [OBJECT_STATUS.inReturn, OBJECT_STATUS.returned];
@@ -38,7 +39,7 @@ function ObjectDetailsPage() {
       setState({ status: resolveViewState(object), object });
     } catch (error) {
       if (requestIdRef.current !== requestId) return;
-      setState({ status: error instanceof ObjectNotFoundError ? 'not-found' : 'error', object: null });
+      setState({ status: error instanceof ObjectNotFoundError ? 'not-found' : 'error', object: null, error });
     }
   }, [objectId]);
 
@@ -85,7 +86,7 @@ function ObjectDetailsPage() {
             tone="error"
             role="alert"
             title="Não foi possível carregar o objeto"
-            description="Ocorreu um problema ao consultar este registro. Tente novamente em alguns instantes."
+            description={getErrorMessage(state.error, 'Ocorreu um problema ao consultar este registro. Tente novamente em alguns instantes.')}
           >
             <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={loadObject}>
               Tentar novamente

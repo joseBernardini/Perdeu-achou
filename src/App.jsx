@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
+import ConfigurationNotice from './components/ConfigurationNotice/ConfigurationNotice';
 import { AuthProvider } from './contexts/AuthContext';
+import authService from './services/authService';
 import HomePage from './pages/Home/HomePage';
 import RegisterObjectPage from './pages/RegisterObject/RegisterObjectPage';
 import ObjectsPage from './pages/Objects/ObjectsPage';
@@ -21,6 +23,10 @@ import AdminRolesPage from './pages/Admin/AdminRolesPage';
 import { ROUTES } from './utils/constants';
 
 function App() {
+  if (authService.configurationError) {
+    return <ConfigurationNotice message={authService.configurationError} />;
+  }
+
   return (
     <AuthProvider>
       <Routes>

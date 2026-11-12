@@ -1,6 +1,22 @@
 const path = require('path');
+const dotenv = require('dotenv');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
+
+const FIREBASE_ENV_KEYS = [
+  'REACT_APP_FIREBASE_API_KEY',
+  'REACT_APP_FIREBASE_AUTH_DOMAIN',
+  'REACT_APP_FIREBASE_PROJECT_ID',
+  'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
+  'REACT_APP_FIREBASE_APP_ID',
+];
+
+const firebaseEnvDefinitions = Object.fromEntries(
+  FIREBASE_ENV_KEYS.map((key) => [`process.env.${key}`, JSON.stringify(process.env[key] ?? '')])
+);
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
@@ -52,6 +68,7 @@ module.exports = (env, argv) => {
     },
 
     plugins: [
+      new webpack.DefinePlugin(firebaseEnvDefinitions),
       new HtmlWebpackPlugin({
         template: './public/index.html',
         favicon: './public/favicon.svg',

@@ -1,13 +1,12 @@
-import { normalizeReason, validateAdminReason } from '../utils/adminValidation';
+import { normalizeReason, validateAdminReason } from '../../utils/adminValidation';
 import {
   ADMIN_EVENT_TYPES,
   OBJECT_REOPEN_TRANSITIONS,
   OBJECT_STATUS,
   OBJECT_STATUS_LABELS,
   REQUEST_STATUS,
-  STAFF_ROLES,
   USER_ROLES,
-} from '../utils/constants';
+} from '../../utils/constants';
 import { SIMULATED_LATENCY_MS, resolveBrowserStorage, wait } from './localStore';
 import { createMockAdminHistoryService, HISTORY_TARGET_TYPES } from './mockAdminHistoryService';
 import { createMockAuthService } from './mockAuthService';
@@ -19,19 +18,12 @@ import {
   ObjectUpdateNotAllowedError,
   PermissionDeniedError,
   RequestStatusChangeError,
-} from './serviceErrors';
-
-function assertStaff(actor) {
-  if (!actor) throw new NotAuthenticatedError();
-  if (!STAFF_ROLES.includes(actor.role)) {
-    throw new PermissionDeniedError('Somente funcionários e administradores podem realizar esta ação.');
-  }
-}
+} from '../serviceErrors';
 
 function assertAdmin(actor) {
-  assertStaff(actor);
+  if (!actor) throw new NotAuthenticatedError();
   if (actor.role !== USER_ROLES.admin) {
-    throw new PermissionDeniedError('Somente administradores podem reabrir registros encerrados.');
+    throw new PermissionDeniedError('Somente administradores podem realizar esta ação.');
   }
 }
 
@@ -62,7 +54,7 @@ export function createMockAdminService({
 
   async function getOverview(actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const [objectCounts, requestCounts] = await Promise.all([objects.countObjectsByStatus(), requests.countRequestsByStatus()]);
     const totalObjects = Object.values(objectCounts).reduce((total, value) => total + value, 0);
@@ -81,7 +73,7 @@ export function createMockAdminService({
 
   async function listObjects(actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const [allObjects, allRequests] = await Promise.all([objects.listObjects(), requests.listAllRequests()]);
     const pendingByObject = allRequests.reduce((counts, request) => {
@@ -94,7 +86,7 @@ export function createMockAdminService({
 
   async function getObjectDetails(objectId, actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const object = await objects.getObjectById(objectId);
     const related = (await requests.listAllRequests()).filter((request) => request.objectId === object.id);
@@ -108,14 +100,14 @@ export function createMockAdminService({
 
   async function listRequests(actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     return withRequesters(await requests.listAllRequests());
   }
 
   async function getRequestDetails(requestId, actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const request = await requests.getRequestById(requestId);
     const [withRequester] = await withRequesters([request]);
@@ -135,14 +127,14 @@ export function createMockAdminService({
 
   async function listHistory(actor, filters = {}) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     return history.listEvents(filters);
   }
 
   async function approveObject(objectId, actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const current = await objects.getObjectById(objectId);
     if (current.status !== OBJECT_STATUS.pendingApproval) {
@@ -163,7 +155,7 @@ export function createMockAdminService({
 
   async function rejectObject(objectId, actor, reasonInput) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
     const reason = requireReason(reasonInput);
 
     const current = await objects.getObjectById(objectId);
@@ -210,7 +202,7 @@ export function createMockAdminService({
 
   async function approveRequest(requestId, actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const request = await requests.getRequestById(requestId);
     assertNotRequester(request, actor);
@@ -249,7 +241,7 @@ export function createMockAdminService({
 
   async function rejectRequest(requestId, actor, reasonInput) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
     const reason = requireReason(reasonInput);
 
     const request = await requests.getRequestById(requestId);
@@ -288,7 +280,7 @@ export function createMockAdminService({
 
   async function completeRequest(requestId, actor) {
     await wait(delay);
-    assertStaff(actor);
+    assertAdmin(actor);
 
     const request = await requests.getRequestById(requestId);
     assertNotRequester(request, actor);

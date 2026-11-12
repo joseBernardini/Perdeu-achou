@@ -8,7 +8,7 @@ const usefulLinks = [
   { id: 'objetos-encontrados', label: 'Objetos encontrados', to: ROUTES.objects },
   { id: 'registrar-objeto', label: 'Registrar objeto encontrado', to: ROUTES.registerObject },
   { id: SECTION_IDS.trust, label: 'Validação e devolução', to: `${ROUTES.home}#${SECTION_IDS.trust}` },
-  { id: 'painel-administrativo', label: 'Painel administrativo (demonstração)', to: ROUTES.admin },
+  { id: 'painel-administrativo', label: 'Painel administrativo', to: ROUTES.admin },
 ];
 
 function Footer() {

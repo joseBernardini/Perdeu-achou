@@ -1,5 +1,5 @@
-import mockRecoveryRequestService from './mockRecoveryRequestService';
+import firebaseClaimService from './firebase/firebaseClaimService';
 
-const recoveryRequestService = mockRecoveryRequestService;
+const recoveryRequestService = firebaseClaimService;
 
 export default recoveryRequestService;

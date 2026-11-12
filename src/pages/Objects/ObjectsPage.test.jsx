@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import mockObjects from '../../data/mockObjects';
+import mockObjects from '../../services/mock/mockObjects';
 import objectService from '../../services/objectService';
-import { OBJECTS_STORAGE_KEY } from '../../services/mockObjectService';
+import { OBJECTS_STORAGE_KEY } from '../../services/mock/mockObjectService';
 import { OBJECT_STATUS, ROUTER_FUTURE_FLAGS, ROUTES } from '../../utils/constants';
 
 const availableSeeds = mockObjects.filter((item) => item.status === OBJECT_STATUS.available);

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import mockObjects from '../../data/mockObjects';
+import mockObjects from '../../services/mock/mockObjects';
 import objectService from '../../services/objectService';
 import { OBJECT_STATUS, ROUTER_FUTURE_FLAGS, ROUTES } from '../../utils/constants';
 

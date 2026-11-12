@@ -22,6 +22,7 @@ import {
 import ActiveFilters from './ActiveFilters';
 import ObjectFiltersPanel from './ObjectFiltersPanel';
 import SearchBar from './SearchBar';
+import { getErrorMessage } from '../../utils/errorMessages';
 import './ObjectsPage.css';
 
 const SKELETON_ITEMS = 6;
@@ -90,9 +91,9 @@ function ObjectsPage() {
 
       if (requestIdRef.current !== requestId) return;
       setState({ status: 'success', objects, counts });
-    } catch {
+    } catch (error) {
       if (requestIdRef.current !== requestId) return;
-      setState({ status: 'error', objects: [], counts: {} });
+      setState({ status: 'error', objects: [], counts: {}, error });
     }
   }, []);
 
@@ -261,7 +262,10 @@ function ObjectsPage() {
                 role="alert"
                 headingLevel={3}
                 title="Não foi possível carregar os objetos"
-                description="Ocorreu um problema ao consultar os registros. Verifique sua conexão e tente novamente em alguns instantes."
+                description={getErrorMessage(
+                  state.error,
+                  'Ocorreu um problema ao consultar os registros. Verifique sua conexão e tente novamente em alguns instantes.'
+                )}
               >
                 <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={loadObjects}>
                   Tentar novamente

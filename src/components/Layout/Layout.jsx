@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import SessionNotice from '../SessionNotice/SessionNotice';
 import useScrollToHash from '../../hooks/useScrollToHash';
 import './Layout.css';
 
@@ -13,6 +14,7 @@ function Layout({ children }) {
         Pular para o conteúdo
       </a>
       <Header />
+      <SessionNotice />
       <main id="conteudo" className="layout__main" tabIndex={-1}>
         {children ?? <Outlet />}
       </main>

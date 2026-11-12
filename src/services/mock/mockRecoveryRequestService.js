@@ -4,12 +4,12 @@ import {
   REQUEST_STATUS,
   REQUEST_STATUS_LABELS,
   REQUEST_STATUS_TRANSITIONS,
-  STAFF_ROLES,
-} from '../utils/constants';
-import { generatePrefixedId, isValidPrefixedId } from '../utils/objectId';
-import { normalizeRecoveryRequestForm, validateRecoveryRequestForm } from '../utils/recoveryRequestValidation';
+  USER_ROLES,
+} from '../../utils/constants';
+import { generatePrefixedId, isValidPrefixedId } from '../../utils/objectId';
+import { normalizeRecoveryRequestForm, validateRecoveryRequestForm } from '../../utils/recoveryRequestValidation';
 import { SIMULATED_LATENCY_MS, createLocalStore, resolveBrowserStorage, wait } from './localStore';
-import objectService from './objectService';
+import objectService from './mockObjectService';
 import {
   DuplicateRequestError,
   FormValidationError,
@@ -19,7 +19,7 @@ import {
   PermissionDeniedError,
   RequestNotFoundError,
   RequestStatusChangeError,
-} from './serviceErrors';
+} from '../serviceErrors';
 
 export const RECOVERY_REQUESTS_STORAGE_KEY = 'perdeu-achou:solicitacoes-recuperacao:v1';
 
@@ -145,8 +145,8 @@ export function createMockRecoveryRequestService({
     await wait(delay);
 
     if (!actor) throw new NotAuthenticatedError();
-    if (!STAFF_ROLES.includes(actor.role)) {
-      throw new PermissionDeniedError('Somente funcionários responsáveis podem alterar o status das solicitações.');
+    if (actor.role !== USER_ROLES.admin) {
+      throw new PermissionDeniedError('Somente administradores podem alterar o status das solicitações.');
     }
 
     const requests = readRequests();

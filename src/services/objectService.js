@@ -1,5 +1,5 @@
-import mockObjectService from './mockObjectService';
+import firebaseObjectService from './firebase/firebaseObjectService';
 
-const objectService = mockObjectService;
+const objectService = firebaseObjectService;
 
 export default objectService;

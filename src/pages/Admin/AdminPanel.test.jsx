@@ -1,10 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import mockObjects from '../../data/mockObjects';
-import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mockAuthService';
-import { RECOVERY_REQUESTS_STORAGE_KEY } from '../../services/mockRecoveryRequestService';
-import { STAFF_DEMO_SESSION_STORAGE_KEY } from '../../services/mockStaffSessionService';
+import mockObjects from '../../services/mock/mockObjects';
+import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mock/mockAuthService';
+import { RECOVERY_REQUESTS_STORAGE_KEY } from '../../services/mock/mockRecoveryRequestService';
 import { OBJECT_STATUS, ROUTER_FUTURE_FLAGS } from '../../utils/constants';
 
 const count = (status) => mockObjects.filter((item) => item.status === status).length;
@@ -21,21 +20,16 @@ function renderAt(path) {
   );
 }
 
-function startStaffSession(role = 'funcionario', actorId = 'USR-STAF1111') {
-  window.localStorage.setItem(
-    STAFF_DEMO_SESSION_STORAGE_KEY,
-    JSON.stringify({ actorId, role, displayName: 'Equipe de demonstração', linkedToAccount: false, startedAt: '2026-11-12T10:00:00.000Z' })
-  );
+const ADMIN = { id: 'USR-STAF1111', name: 'Administração de Teste', email: 'admin@exemplo.com', role: 'admin', profileType: 'funcionario' };
+const PERSON_A = { id: 'USR-AAAA1111', name: 'Pessoa A', email: 'a@exemplo.com', role: 'user', profileType: 'aluno' };
+const PERSON_B = { id: 'USR-BBBB2222', name: 'Pessoa B', email: 'b@exemplo.com', role: 'user', profileType: 'aluno' };
+
+function signInAs(user = ADMIN) {
+  window.localStorage.setItem(DEMO_USERS_STORAGE_KEY, JSON.stringify([ADMIN, PERSON_A, PERSON_B]));
+  window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify({ userId: user.id }));
 }
 
 function storeRequests(requests) {
-  window.localStorage.setItem(
-    DEMO_USERS_STORAGE_KEY,
-    JSON.stringify([
-      { id: 'USR-AAAA1111', name: 'Pessoa A', email: 'a@exemplo.com', role: 'usuario' },
-      { id: 'USR-BBBB2222', name: 'Pessoa B', email: 'b@exemplo.com', role: 'usuario' },
-    ])
-  );
   window.localStorage.setItem(
     RECOVERY_REQUESTS_STORAGE_KEY,
     JSON.stringify(
@@ -69,37 +63,37 @@ describe('Painel administrativo', () => {
     window.localStorage.clear();
   });
 
-  it('identifica a demonstração e permite entrar com um perfil demonstrativo', async () => {
+  it('exige autenticação para acessar o painel', () => {
     renderAt('/painel');
 
     expect(screen.getByRole('heading', { level: 1, name: 'Painel administrativo' })).toBeInTheDocument();
-    expect(screen.getByText('Demonstração sem controle de acesso.')).toBeInTheDocument();
-    expect(screen.queryByLabelText(/senha/i)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText(/Administrador/));
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar na demonstração do painel' }));
-
-    expect(await screen.findByRole('heading', { level: 1, name: 'Visão geral' })).toBeInTheDocument();
-    expect(screen.getByText('Ambiente de demonstração.')).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Navegação do painel' })).toBeInTheDocument();
-    expect(JSON.parse(window.localStorage.getItem(STAFF_DEMO_SESSION_STORAGE_KEY)).role).toBe('administrador');
+    expect(screen.getByRole('heading', { name: 'Entre com uma conta de administrador' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Navegação do painel' })).not.toBeInTheDocument();
   });
 
-  it('não altera a conta do usuário conectado ao entrar no painel', async () => {
-    const user = { id: 'USR-AAAA1111', name: 'Pessoa A', email: 'a@exemplo.com', role: 'usuario' };
-    window.localStorage.setItem(DEMO_USERS_STORAGE_KEY, JSON.stringify([user]));
-    window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify({ userId: user.id }));
-    renderAt('/painel');
+  it('bloqueia contas sem o papel de administrador e não oferece forma de elevar privilégios', () => {
+    signInAs(PERSON_A);
+    renderAt('/painel/objetos');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar na demonstração do painel' }));
-    await screen.findByRole('heading', { level: 1, name: 'Visão geral' });
+    expect(screen.getByRole('heading', { name: 'Acesso restrito a administradores' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Navegação do painel' })).not.toBeInTheDocument();
+  });
 
-    expect(JSON.parse(window.localStorage.getItem(DEMO_USERS_STORAGE_KEY))[0].role).toBe('usuario');
-    expect(JSON.parse(window.localStorage.getItem(STAFF_DEMO_SESSION_STORAGE_KEY)).actorId).toBe(user.id);
+  it('permite o acesso a administradores e mostra o link do painel no site', async () => {
+    signInAs(ADMIN);
+    const { unmount } = renderAt('/painel');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Visão geral' })).toBeInTheDocument();
+    expect(screen.getByText('Administração de Teste')).toBeInTheDocument();
+    unmount();
+
+    renderAt('/');
+    expect(screen.getByRole('link', { name: 'Painel' })).toHaveAttribute('href', '/painel');
   });
 
   it('calcula os indicadores a partir dos dados locais', async () => {
-    startStaffSession();
+    signInAs(ADMIN);
     storeRequests([{ id: 'SOL-AAAA1111', requesterId: 'USR-AAAA1111' }]);
     renderAt('/painel');
 
@@ -113,7 +107,7 @@ describe('Painel administrativo', () => {
   });
 
   it('aprova um registro pendente com confirmação e atualiza os indicadores e a consulta pública', async () => {
-    startStaffSession();
+    signInAs(ADMIN);
     renderAt(`/painel/objetos/${seedPending.id}`);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Aprovar registro' }));
@@ -134,7 +128,7 @@ describe('Painel administrativo', () => {
   });
 
   it('exige motivo para rejeitar um registro', async () => {
-    startStaffSession();
+    signInAs(ADMIN);
     renderAt(`/painel/objetos/${seedPending.id}`);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Rejeitar registro' }));
@@ -149,7 +143,7 @@ describe('Painel administrativo', () => {
   });
 
   it('pesquisa e filtra objetos por status e categoria', async () => {
-    startStaffSession();
+    signInAs(ADMIN);
     renderAt('/painel/objetos');
 
     await screen.findByText(`${mockObjects.length} objetos encontrados`);
@@ -166,7 +160,7 @@ describe('Painel administrativo', () => {
   });
 
   it('aprova uma solicitação, impede outra aprovação simultânea e conclui a devolução', async () => {
-    startStaffSession();
+    signInAs(ADMIN);
     storeRequests([
       { id: 'SOL-AAAA1111', requesterId: 'USR-AAAA1111' },
       { id: 'SOL-BBBB2222', requesterId: 'USR-BBBB2222' },
@@ -202,23 +196,16 @@ describe('Painel administrativo', () => {
   });
 
   it('não permite analisar a própria solicitação', async () => {
-    startStaffSession('funcionario', 'USR-AAAA1111');
-    storeRequests([{ id: 'SOL-AAAA1111', requesterId: 'USR-AAAA1111' }]);
+    signInAs(ADMIN);
+    storeRequests([{ id: 'SOL-AAAA1111', requesterId: ADMIN.id }]);
     renderAt('/painel/solicitacoes/SOL-AAAA1111');
 
     expect(await screen.findByText(/Esta solicitação foi enviada pela sua conta/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aprovar solicitação' })).not.toBeInTheDocument();
   });
 
-  it('permite reabrir registros devolvidos apenas para administradores', async () => {
-    startStaffSession('funcionario');
-    const { unmount } = renderAt(`/painel/objetos/${seedReturned.id}`);
-
-    expect(await screen.findByText(/Somente administradores podem reabrir/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Reabrir registro' })).not.toBeInTheDocument();
-    unmount();
-
-    startStaffSession('administrador', 'USR-ADMN1111');
+  it('permite que administradores reabram registros devolvidos com justificativa', async () => {
+    signInAs(ADMIN);
     renderAt(`/painel/objetos/${seedReturned.id}`);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Reabrir registro' }));
@@ -229,18 +216,18 @@ describe('Painel administrativo', () => {
     expect(screen.getAllByText('Disponível').length).toBeGreaterThan(0);
   });
 
-  it('encerra a demonstração', async () => {
-    startStaffSession();
+  it('encerra a sessão pelo painel', async () => {
+    signInAs(ADMIN);
     renderAt('/painel');
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Sair da demonstração' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Sair' }));
 
-    expect(screen.getByRole('button', { name: 'Entrar na demonstração do painel' })).toBeInTheDocument();
-    expect(window.localStorage.getItem(STAFF_DEMO_SESSION_STORAGE_KEY)).toBeNull();
+    expect(await screen.findByRole('link', { name: 'Entrar' })).toBeInTheDocument();
+    expect(window.localStorage.getItem(DEMO_SESSION_STORAGE_KEY)).toBeNull();
   });
 
   it('abre a navegação adaptada para telas menores', async () => {
-    startStaffSession();
+    signInAs(ADMIN);
     renderAt('/painel');
 
     const toggle = await screen.findByRole('button', { name: 'Abrir navegação do painel' });

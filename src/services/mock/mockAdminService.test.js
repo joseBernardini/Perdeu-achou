@@ -1,5 +1,5 @@
-import mockObjects from '../data/mockObjects';
-import { ADMIN_EVENT_TYPES, OBJECT_STATUS, REQUEST_STATUS, USER_ROLES } from '../utils/constants';
+import mockObjects from './mockObjects';
+import { ADMIN_EVENT_TYPES, OBJECT_STATUS, REQUEST_STATUS, USER_ROLES } from '../../utils/constants';
 import { createMockAdminService } from './mockAdminService';
 import { createMockObjectService, SEED_STATUS_STORAGE_KEY } from './mockObjectService';
 import { createMockRecoveryRequestService } from './mockRecoveryRequestService';
@@ -9,7 +9,7 @@ import {
   ObjectUpdateNotAllowedError,
   PermissionDeniedError,
   RequestStatusChangeError,
-} from './serviceErrors';
+} from '../serviceErrors';
 
 function createMemoryStorage() {
   const data = {};
@@ -29,9 +29,9 @@ const seedPending = mockObjects.find((item) => item.status === OBJECT_STATUS.pen
 const seedAvailable = mockObjects.find((item) => item.status === OBJECT_STATUS.available);
 const seedReturned = mockObjects.find((item) => item.status === OBJECT_STATUS.returned);
 
-const staff = { id: 'USR-STAF1111', role: USER_ROLES.staff };
+const staff = { id: 'USR-STAF1111', role: USER_ROLES.admin };
 const admin = { id: 'USR-ADMN1111', role: USER_ROLES.admin };
-const member = { id: 'USR-MEMB1111', role: USER_ROLES.member };
+const member = { id: 'USR-MEMB1111', role: USER_ROLES.user };
 const REQUESTER_A = 'USR-AAAA1111';
 const REQUESTER_B = 'USR-BBBB2222';
 const REASON = 'Informações insuficientes para confirmar a propriedade.';
@@ -124,7 +124,7 @@ describe('mockAdminService', () => {
 
     const events = await service.listHistory(staff);
     expect(events.map((event) => event.type)).toEqual([ADMIN_EVENT_TYPES.objectReturned, ADMIN_EVENT_TYPES.requestApproved]);
-    expect(events[0]).toMatchObject({ actorId: staff.id, actorRole: USER_ROLES.staff, targetId: seedAvailable.id });
+    expect(events[0]).toMatchObject({ actorId: staff.id, actorRole: USER_ROLES.admin, targetId: seedAvailable.id });
   });
 
   it('impede aprovar duas solicitações para o mesmo objeto', async () => {
@@ -174,7 +174,7 @@ describe('mockAdminService', () => {
     await expect(objects.changeObjectStatus(seedReturned.id, OBJECT_STATUS.available)).rejects.toBeInstanceOf(
       ObjectUpdateNotAllowedError
     );
-    await expect(service.reopenObject(seedReturned.id, staff, REASON)).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(service.reopenObject(seedReturned.id, member, REASON)).rejects.toBeInstanceOf(PermissionDeniedError);
     await expect(service.reopenObject(seedReturned.id, admin, '')).rejects.toBeInstanceOf(FormValidationError);
 
     const reopened = await service.reopenObject(seedReturned.id, admin, 'Devolução registrada por engano no balcão.');
@@ -189,7 +189,7 @@ describe('mockAdminService', () => {
     const { admin: service, requests, storage } = buildServices();
     storage.setItem(
       'perdeu-achou:usuarios-demonstracao:v1',
-      JSON.stringify([{ id: REQUESTER_A, name: 'Pessoa A', email: 'a@exemplo.com', role: USER_ROLES.member }])
+      JSON.stringify([{ id: REQUESTER_A, name: 'Pessoa A', email: 'a@exemplo.com', role: USER_ROLES.user }])
     );
     await createRequest(requests, REQUESTER_A);
 

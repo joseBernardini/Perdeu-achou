@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import { OBJECTS_STORAGE_KEY } from '../../services/mockObjectService';
+import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mock/mockAuthService';
+import { OBJECTS_STORAGE_KEY } from '../../services/mock/mockObjectService';
 import { ROUTER_FUTURE_FLAGS, ROUTES } from '../../utils/constants';
 import { getTodayISODate } from '../../utils/date';
 
@@ -23,9 +24,25 @@ function fillValidForm() {
   fireEvent.change(screen.getByLabelText('Data em que foi encontrado'), { target: { value: getTodayISODate() } });
 }
 
+const TEST_USER = { id: 'USR-AAAA1111', name: 'Pessoa de Teste', email: 'pessoa@exemplo.com', role: 'user', profileType: 'aluno' };
+
+function signInTestUser() {
+  window.localStorage.setItem(DEMO_USERS_STORAGE_KEY, JSON.stringify([TEST_USER]));
+  window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify({ userId: TEST_USER.id }));
+}
+
 describe('RegisterObjectPage', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    signInTestUser();
+  });
+
+  it('exige uma conta autenticada para registrar objetos', () => {
+    window.localStorage.removeItem(DEMO_SESSION_STORAGE_KEY);
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: 'Entre na sua conta para registrar um objeto' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nome do objeto')).not.toBeInTheDocument();
   });
 
   it('é acessível pelo botão do cabeçalho', () => {
