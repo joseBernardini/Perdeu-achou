@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, Menu, Search, X } from 'lucide-react';
+import { LogIn, Menu, PackagePlus, Search, X } from 'lucide-react';
 import BrandLogo from '../BrandLogo/BrandLogo';
 import Button from '../Button/Button';
 import { NAV_LINKS, ROUTES } from '../../utils/constants';
@@ -64,8 +64,19 @@ function Header() {
             <Button variant="secondary" size="sm" icon={Search} iconPosition="start" unavailable>
               Consultar objetos
             </Button>
-            <Button variant="primary" size="sm" icon={LogIn} iconPosition="start" unavailable>
+            <Button variant="ghost" size="sm" icon={LogIn} iconPosition="start" unavailable>
               Entrar
+            </Button>
+            <Button
+              to={ROUTES.registerObject}
+              variant="primary"
+              size="sm"
+              icon={PackagePlus}
+              iconPosition="start"
+              className="header__register"
+              aria-current={location.pathname === ROUTES.registerObject ? 'page' : undefined}
+            >
+              Registrar objeto
             </Button>
           </div>
         </div>

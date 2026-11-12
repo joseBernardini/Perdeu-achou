@@ -127,3 +127,22 @@
   visibility: visible;
   transform: translate(-50%, 0);
 }
+
+.button--loading {
+  cursor: progress;
+}
+
+.button--primary.button--loading,
+.button--primary.button--loading:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.button__spinner {
+  animation: button-spin 800ms linear infinite;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

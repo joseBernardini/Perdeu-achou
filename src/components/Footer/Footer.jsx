@@ -5,6 +5,7 @@ import './Footer.css';
 
 const usefulLinks = [
   ...NAV_LINKS,
+  { id: 'registrar-objeto', label: 'Registrar objeto encontrado', to: ROUTES.registerObject },
   { id: SECTION_IDS.trust, label: 'Validação e devolução', to: `${ROUTES.home}#${SECTION_IDS.trust}` },
 ];
 

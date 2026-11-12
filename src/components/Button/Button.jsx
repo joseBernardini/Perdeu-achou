@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { Link } from 'react-router-dom';
+import { LoaderCircle } from 'lucide-react';
 import { UNAVAILABLE_MESSAGE } from '../../utils/constants';
 import './Button.css';
 
@@ -11,15 +12,22 @@ function Button({
   icon: Icon,
   iconPosition = 'end',
   unavailable = false,
+  loading = false,
+  loadingText,
   className = '',
   ...rest
 }) {
   const hintId = useId();
-  const classes = ['button', `button--${variant}`, `button--${size}`, unavailable && 'button--unavailable', className]
+  const classes = ['button', `button--${variant}`, `button--${size}`, unavailable && 'button--unavailable', loading && 'button--loading', className]
     .filter(Boolean)
     .join(' ');
 
-  const content = (
+  const content = loading ? (
+    <>
+      <LoaderCircle className="button__icon button__spinner" size={18} strokeWidth={2} aria-hidden="true" />
+      <span>{loadingText ?? children}</span>
+    </>
+  ) : (
     <>
       {Icon && iconPosition === 'start' && <Icon className="button__icon" size={18} strokeWidth={1.75} aria-hidden="true" />}
       <span>{children}</span>
@@ -52,6 +60,23 @@ function Button({
       <Link to={to} className={classes} {...rest}>
         {content}
       </Link>
+    );
+  }
+
+  if (loading) {
+    const { onClick, ...buttonProps } = rest;
+
+    return (
+      <button
+        type="button"
+        className={classes}
+        {...buttonProps}
+        aria-disabled="true"
+        aria-busy="true"
+        onClick={(event) => event.preventDefault()}
+      >
+        {content}
+      </button>
     );
   }
 
