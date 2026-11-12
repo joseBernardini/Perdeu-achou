@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CircleAlert, Clock, PackagePlus } from 'lucide-react';
 import Button from '../../components/Button/Button';
 import FormField, { getFieldDescriptionIds } from '../../components/FormField/FormField';
+import { useAuth } from '../../contexts/AuthContext';
 import objectService from '../../services/objectService';
 import { ObjectValidationError } from '../../services/serviceErrors';
 import { OBJECT_FIELD_LIMITS, OBJECT_STATUS, OBJECT_STATUS_LABELS, ROUTES } from '../../utils/constants';
@@ -38,6 +39,7 @@ const FIELD_HINTS = {
 };
 
 function RegisterObjectForm({ onSuccess }) {
+  const { user } = useAuth();
   const [values, setValues] = useState(EMPTY_OBJECT_FORM);
   const [errors, setErrors] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -112,7 +114,7 @@ function RegisterObjectForm({ onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      const record = await objectService.createObject(values);
+      const record = await objectService.createObject(values, { registeredBy: user?.id ?? null });
       if (!isMountedRef.current) return;
       onSuccess(record);
     } catch (error) {

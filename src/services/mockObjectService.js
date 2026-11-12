@@ -8,6 +8,7 @@ import {
   ObjectUpdateNotAllowedError,
   ObjectValidationError,
 } from './serviceErrors';
+import { SIMULATED_LATENCY_MS } from './localStore';
 
 export const OBJECTS_STORAGE_KEY = 'perdeu-achou:objetos-registrados:v1';
 
@@ -45,7 +46,7 @@ function isStoredRecord(record) {
 export function createMockObjectService({
   storage = resolveBrowserStorage(),
   seed = mockObjects,
-  delay = 450,
+  delay = SIMULATED_LATENCY_MS,
   generateId = generateObjectId,
   now = () => new Date(),
 } = {}) {
@@ -91,7 +92,7 @@ export function createMockObjectService({
     throw new ObjectStorageError('Não foi possível gerar um código único para o objeto. Tente novamente.');
   }
 
-  async function createObject(input) {
+  async function createObject(input, { registeredBy = null } = {}) {
     await wait(delay);
 
     const errors = validateObjectForm(input);
@@ -105,6 +106,7 @@ export function createMockObjectService({
       id: createUniqueId(existingIds),
       ...normalizeObjectForm(input),
       status: OBJECT_STATUS.pendingApproval,
+      registeredBy: typeof registeredBy === 'string' ? registeredBy : null,
       createdAt: timestamp,
       updatedAt: timestamp,
     };

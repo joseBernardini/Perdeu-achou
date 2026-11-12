@@ -171,3 +171,13 @@
     padding: var(--space-4);
   }
 }
+
+.object-details__aside .button {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.object-details__aside-hint {
+  font-size: var(--font-size-xs);
+  text-align: center;
+}

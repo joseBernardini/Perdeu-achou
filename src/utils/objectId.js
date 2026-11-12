@@ -2,7 +2,6 @@ import { OBJECT_ID_PREFIX } from './constants';
 
 const ID_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const ID_LENGTH = 8;
-const OBJECT_ID_PATTERN = new RegExp(`^${OBJECT_ID_PREFIX}[${ID_ALPHABET}]{${ID_LENGTH}}$`);
 
 function getRandomBytes(length) {
   const cryptoApi = globalThis.crypto;
@@ -14,14 +13,22 @@ function getRandomBytes(length) {
   return cryptoApi.getRandomValues(new Uint8Array(length));
 }
 
-export function generateObjectId() {
+export function generatePrefixedId(prefix) {
   const bytes = getRandomBytes(ID_LENGTH);
   const code = Array.from(bytes, (byte) => ID_ALPHABET[byte % ID_ALPHABET.length]).join('');
-  return `${OBJECT_ID_PREFIX}${code}`;
+  return `${prefix}${code}`;
+}
+
+export function isValidPrefixedId(prefix, value) {
+  return typeof value === 'string' && new RegExp(`^${prefix}[${ID_ALPHABET}]{${ID_LENGTH}}$`).test(value);
+}
+
+export function generateObjectId() {
+  return generatePrefixedId(OBJECT_ID_PREFIX);
 }
 
 export function isValidObjectId(value) {
-  return typeof value === 'string' && OBJECT_ID_PATTERN.test(value);
+  return isValidPrefixedId(OBJECT_ID_PREFIX, value);
 }
 
 export function normalizeObjectId(value) {

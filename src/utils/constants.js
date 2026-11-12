@@ -9,6 +9,11 @@ export const ROUTES = {
   objects: '/objetos',
   registerObject: '/objetos/registrar',
   objectDetails: '/objetos/:objectId',
+  recoveryRequest: '/objetos/:objectId/solicitar',
+  login: '/entrar',
+  signUp: '/cadastro',
+  passwordReset: '/recuperar-senha',
+  userArea: '/minha-area',
 };
 
 export const SECTION_IDS = {
@@ -61,6 +66,60 @@ export const OBJECT_FIELD_LIMITS = {
 
 export const OBJECT_ID_PREFIX = 'OBJ-';
 
+export const REQUEST_ID_PREFIX = 'SOL-';
+
+export const USER_ID_PREFIX = 'USR-';
+
+export const REQUEST_STATUS = {
+  pending: 'pendente',
+  approved: 'aprovada',
+  rejected: 'rejeitada',
+  completed: 'concluida',
+};
+
+export const REQUEST_STATUS_LABELS = {
+  [REQUEST_STATUS.pending]: 'Pendente',
+  [REQUEST_STATUS.approved]: 'Aprovada',
+  [REQUEST_STATUS.rejected]: 'Rejeitada',
+  [REQUEST_STATUS.completed]: 'Concluída',
+};
+
+export const REQUEST_STATUS_DESCRIPTIONS = {
+  [REQUEST_STATUS.pending]: 'Aguardando a análise de um funcionário responsável.',
+  [REQUEST_STATUS.approved]:
+    'A propriedade foi confirmada. Procure o setor responsável para combinar a retirada do objeto.',
+  [REQUEST_STATUS.rejected]:
+    'As informações enviadas não foram suficientes para confirmar a propriedade do objeto.',
+  [REQUEST_STATUS.completed]: 'O objeto foi devolvido e a solicitação foi encerrada.',
+};
+
+export const REQUEST_STATUS_TRANSITIONS = {
+  [REQUEST_STATUS.pending]: [REQUEST_STATUS.approved, REQUEST_STATUS.rejected],
+  [REQUEST_STATUS.approved]: [REQUEST_STATUS.completed],
+  [REQUEST_STATUS.rejected]: [],
+  [REQUEST_STATUS.completed]: [],
+};
+
+export const REQUEST_FIELD_LIMITS = {
+  message: { min: 30, max: 1000 },
+  additionalInfo: { max: 500 },
+};
+
+export const USER_ROLES = {
+  member: 'usuario',
+  staff: 'funcionario',
+};
+
+export const AUTH_FIELD_LIMITS = {
+  name: { min: 3, max: 80 },
+  email: { max: 120 },
+  password: { min: 8, max: 64 },
+};
+
 export function getObjectDetailsPath(objectId) {
   return `${ROUTES.objects}/${encodeURIComponent(objectId)}`;
+}
+
+export function getRecoveryRequestPath(objectId) {
+  return `${getObjectDetailsPath(objectId)}/solicitar`;
 }

@@ -42,3 +42,19 @@
 .status-badge--reprovado {
   --status-color: var(--color-danger);
 }
+
+.status-badge--pendente {
+  --status-color: var(--color-warning);
+}
+
+.status-badge--aprovada {
+  --status-color: var(--color-success);
+}
+
+.status-badge--rejeitada {
+  --status-color: var(--color-danger);
+}
+
+.status-badge--concluida {
+  --status-color: var(--color-text-muted);
+}

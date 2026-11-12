@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, Menu, PackagePlus, Search, X } from 'lucide-react';
+import { LogIn, Menu, PackagePlus, Search, UserRound, X } from 'lucide-react';
 import BrandLogo from '../BrandLogo/BrandLogo';
 import Button from '../Button/Button';
+import { useAuth } from '../../contexts/AuthContext';
 import { NAV_LINKS, ROUTES } from '../../utils/constants';
 import './Header.css';
 
 function Header() {
   const location = useLocation();
+  const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -71,9 +73,29 @@ function Header() {
             >
               Consultar objetos
             </Button>
-            <Button variant="ghost" size="sm" icon={LogIn} iconPosition="start" unavailable>
-              Entrar
-            </Button>
+            {user ? (
+              <Button
+                to={ROUTES.userArea}
+                variant="ghost"
+                size="sm"
+                icon={UserRound}
+                iconPosition="start"
+                aria-current={location.pathname === ROUTES.userArea ? 'page' : undefined}
+              >
+                Minha área
+              </Button>
+            ) : (
+              <Button
+                to={ROUTES.login}
+                variant="ghost"
+                size="sm"
+                icon={LogIn}
+                iconPosition="start"
+                aria-current={location.pathname === ROUTES.login ? 'page' : undefined}
+              >
+                Entrar
+              </Button>
+            )}
             <Button
               to={ROUTES.registerObject}
               variant="primary"

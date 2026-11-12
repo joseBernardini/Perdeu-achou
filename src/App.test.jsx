@@ -48,13 +48,11 @@ describe('App', () => {
     });
   });
 
-  it('identifica as ações ainda indisponíveis', () => {
+  it('dá acesso à tela de entrada pelo cabeçalho', () => {
+    window.localStorage.clear();
     renderApp();
 
-    const loginButton = screen.getByRole('button', { name: 'Entrar' });
-
-    expect(loginButton).toHaveAttribute('aria-disabled', 'true');
-    expect(loginButton).toHaveAccessibleDescription('Disponível em breve');
+    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/entrar');
   });
 
   it('dá acesso à consulta de objetos pela página inicial', () => {

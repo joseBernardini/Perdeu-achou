@@ -1,11 +1,11 @@
 import { OBJECT_STATUS_LABELS } from '../../utils/constants';
 import './StatusBadge.css';
 
-function StatusBadge({ status, className = '' }) {
+function StatusBadge({ status, label, className = '' }) {
   return (
     <span className={`status-badge status-badge--${status} ${className}`.trim()}>
       <span className="status-badge__dot" aria-hidden="true" />
-      {OBJECT_STATUS_LABELS[status] ?? status}
+      {label ?? OBJECT_STATUS_LABELS[status] ?? status}
     </span>
   );
 }

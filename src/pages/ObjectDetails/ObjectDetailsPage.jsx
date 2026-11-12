@@ -11,6 +11,7 @@ import objectService from '../../services/objectService';
 import { ObjectNotFoundError } from '../../services/serviceErrors';
 import { OBJECT_STATUS, PUBLIC_OBJECT_STATUSES, ROUTES } from '../../utils/constants';
 import { formatDateTime, formatISODate } from '../../utils/date';
+import RecoveryActionPanel from './RecoveryActionPanel';
 import './ObjectDetailsPage.css';
 
 const CLOSED_STATUSES = [OBJECT_STATUS.inReturn, OBJECT_STATUS.returned];
@@ -176,19 +177,7 @@ function ObjectDetailsPage() {
               )}
             </article>
 
-            <aside className="object-details__aside" aria-labelledby="reconheceu-titulo">
-              <h2 id="reconheceu-titulo" className="object-details__aside-title">
-                Reconheceu este objeto?
-              </h2>
-              <p>
-                Procure um funcionário responsável e informe o código{' '}
-                <strong className="object-details-page__inline-code">{object.id}</strong>.
-              </p>
-              <p>
-                A devolução acontece somente depois da conferência de informações que comprovem que o objeto é seu,
-                como detalhes que não aparecem nesta descrição.
-              </p>
-            </aside>
+            <RecoveryActionPanel object={object} />
           </div>
         )}
       </div>
