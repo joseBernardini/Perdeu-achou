@@ -14,6 +14,13 @@ export const ROUTES = {
   signUp: '/cadastro',
   passwordReset: '/recuperar-senha',
   userArea: '/minha-area',
+  admin: '/painel',
+  adminObjects: '/painel/objetos',
+  adminObjectDetails: '/painel/objetos/:objectId',
+  adminRequests: '/painel/solicitacoes',
+  adminRequestDetails: '/painel/solicitacoes/:requestId',
+  adminHistory: '/painel/historico',
+  adminRoles: '/painel/perfis',
 };
 
 export const SECTION_IDS = {
@@ -95,7 +102,7 @@ export const REQUEST_STATUS_DESCRIPTIONS = {
 
 export const REQUEST_STATUS_TRANSITIONS = {
   [REQUEST_STATUS.pending]: [REQUEST_STATUS.approved, REQUEST_STATUS.rejected],
-  [REQUEST_STATUS.approved]: [REQUEST_STATUS.completed],
+  [REQUEST_STATUS.approved]: [REQUEST_STATUS.completed, REQUEST_STATUS.rejected],
   [REQUEST_STATUS.rejected]: [],
   [REQUEST_STATUS.completed]: [],
 };
@@ -108,7 +115,45 @@ export const REQUEST_FIELD_LIMITS = {
 export const USER_ROLES = {
   member: 'usuario',
   staff: 'funcionario',
+  admin: 'administrador',
 };
+
+export const USER_ROLE_LABELS = {
+  [USER_ROLES.member]: 'Usuário comum',
+  [USER_ROLES.staff]: 'Funcionário',
+  [USER_ROLES.admin]: 'Administrador',
+};
+
+export const STAFF_ROLES = [USER_ROLES.staff, USER_ROLES.admin];
+
+export const OBJECT_REOPEN_TRANSITIONS = {
+  [OBJECT_STATUS.returned]: OBJECT_STATUS.available,
+  [OBJECT_STATUS.rejected]: OBJECT_STATUS.pendingApproval,
+};
+
+export const EVENT_ID_PREFIX = 'EVT-';
+
+export const ADMIN_EVENT_TYPES = {
+  objectApproved: 'objeto_aprovado',
+  objectRejected: 'objeto_rejeitado',
+  objectReopened: 'objeto_reaberto',
+  requestApproved: 'solicitacao_aprovada',
+  requestRejected: 'solicitacao_rejeitada',
+  requestApprovalCanceled: 'aprovacao_cancelada',
+  objectReturned: 'objeto_devolvido',
+};
+
+export const ADMIN_EVENT_LABELS = {
+  [ADMIN_EVENT_TYPES.objectApproved]: 'Objeto aprovado',
+  [ADMIN_EVENT_TYPES.objectRejected]: 'Objeto rejeitado',
+  [ADMIN_EVENT_TYPES.objectReopened]: 'Registro reaberto',
+  [ADMIN_EVENT_TYPES.requestApproved]: 'Solicitação aprovada',
+  [ADMIN_EVENT_TYPES.requestRejected]: 'Solicitação rejeitada',
+  [ADMIN_EVENT_TYPES.requestApprovalCanceled]: 'Aprovação cancelada',
+  [ADMIN_EVENT_TYPES.objectReturned]: 'Objeto devolvido',
+};
+
+export const ADMIN_REASON_LIMITS = { min: 10, max: 300 };
 
 export const AUTH_FIELD_LIMITS = {
   name: { min: 3, max: 80 },
@@ -122,4 +167,12 @@ export function getObjectDetailsPath(objectId) {
 
 export function getRecoveryRequestPath(objectId) {
   return `${getObjectDetailsPath(objectId)}/solicitar`;
+}
+
+export function getAdminObjectPath(objectId) {
+  return `${ROUTES.adminObjects}/${encodeURIComponent(objectId)}`;
+}
+
+export function getAdminRequestPath(requestId) {
+  return `${ROUTES.adminRequests}/${encodeURIComponent(requestId)}`;
 }

@@ -1,0 +1,256 @@
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import App from '../../App';
+import mockObjects from '../../data/mockObjects';
+import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mockAuthService';
+import { RECOVERY_REQUESTS_STORAGE_KEY } from '../../services/mockRecoveryRequestService';
+import { STAFF_DEMO_SESSION_STORAGE_KEY } from '../../services/mockStaffSessionService';
+import { OBJECT_STATUS, ROUTER_FUTURE_FLAGS } from '../../utils/constants';
+
+const count = (status) => mockObjects.filter((item) => item.status === status).length;
+const seedPending = mockObjects.find((item) => item.status === OBJECT_STATUS.pendingApproval);
+const seedAvailable = mockObjects.find((item) => item.status === OBJECT_STATUS.available);
+const seedReturned = mockObjects.find((item) => item.status === OBJECT_STATUS.returned);
+const REASON = 'As informações não conferem com o objeto guardado.';
+
+function renderAt(path) {
+  return render(
+    <MemoryRouter initialEntries={[path]} future={ROUTER_FUTURE_FLAGS}>
+      <App />
+    </MemoryRouter>
+  );
+}
+
+function startStaffSession(role = 'funcionario', actorId = 'USR-STAF1111') {
+  window.localStorage.setItem(
+    STAFF_DEMO_SESSION_STORAGE_KEY,
+    JSON.stringify({ actorId, role, displayName: 'Equipe de demonstração', linkedToAccount: false, startedAt: '2026-11-12T10:00:00.000Z' })
+  );
+}
+
+function storeRequests(requests) {
+  window.localStorage.setItem(
+    DEMO_USERS_STORAGE_KEY,
+    JSON.stringify([
+      { id: 'USR-AAAA1111', name: 'Pessoa A', email: 'a@exemplo.com', role: 'usuario' },
+      { id: 'USR-BBBB2222', name: 'Pessoa B', email: 'b@exemplo.com', role: 'usuario' },
+    ])
+  );
+  window.localStorage.setItem(
+    RECOVERY_REQUESTS_STORAGE_KEY,
+    JSON.stringify(
+      requests.map((request, index) => ({
+        objectId: seedAvailable.id,
+        message: 'A garrafa tem um amassado na base e um adesivo de planeta descolando.',
+        additionalInfo: '',
+        status: 'pendente',
+        createdAt: `2026-11-1${index}T12:00:00.000Z`,
+        updatedAt: `2026-11-1${index}T12:00:00.000Z`,
+        ...request,
+      }))
+    )
+  );
+}
+
+function indicator(label) {
+  const term = screen.getByText(label, { selector: 'dt' });
+  return term.parentElement.querySelector('.admin-indicator__value').textContent;
+}
+
+async function confirmDialog(reason) {
+  const dialog = await screen.findByRole('alertdialog');
+  if (reason) fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: reason } });
+  fireEvent.click(within(dialog).getAllByRole('button').at(-1));
+  return dialog;
+}
+
+describe('Painel administrativo', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('identifica a demonstração e permite entrar com um perfil demonstrativo', async () => {
+    renderAt('/painel');
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Painel administrativo' })).toBeInTheDocument();
+    expect(screen.getByText('Demonstração sem controle de acesso.')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/senha/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/Administrador/));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na demonstração do painel' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Visão geral' })).toBeInTheDocument();
+    expect(screen.getByText('Ambiente de demonstração.')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navegação do painel' })).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(STAFF_DEMO_SESSION_STORAGE_KEY)).role).toBe('administrador');
+  });
+
+  it('não altera a conta do usuário conectado ao entrar no painel', async () => {
+    const user = { id: 'USR-AAAA1111', name: 'Pessoa A', email: 'a@exemplo.com', role: 'usuario' };
+    window.localStorage.setItem(DEMO_USERS_STORAGE_KEY, JSON.stringify([user]));
+    window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify({ userId: user.id }));
+    renderAt('/painel');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na demonstração do painel' }));
+    await screen.findByRole('heading', { level: 1, name: 'Visão geral' });
+
+    expect(JSON.parse(window.localStorage.getItem(DEMO_USERS_STORAGE_KEY))[0].role).toBe('usuario');
+    expect(JSON.parse(window.localStorage.getItem(STAFF_DEMO_SESSION_STORAGE_KEY)).actorId).toBe(user.id);
+  });
+
+  it('calcula os indicadores a partir dos dados locais', async () => {
+    startStaffSession();
+    storeRequests([{ id: 'SOL-AAAA1111', requesterId: 'USR-AAAA1111' }]);
+    renderAt('/painel');
+
+    await screen.findByText('Objetos cadastrados', { selector: 'dt' });
+
+    expect(indicator('Objetos cadastrados')).toBe(String(mockObjects.length));
+    expect(indicator('Aguardando aprovação')).toBe(String(count(OBJECT_STATUS.pendingApproval)));
+    expect(indicator('Objetos disponíveis')).toBe(String(count(OBJECT_STATUS.available)));
+    expect(indicator('Solicitações pendentes')).toBe('1');
+    expect(indicator('Objetos devolvidos')).toBe(String(count(OBJECT_STATUS.returned)));
+  });
+
+  it('aprova um registro pendente com confirmação e atualiza os indicadores e a consulta pública', async () => {
+    startStaffSession();
+    renderAt(`/painel/objetos/${seedPending.id}`);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Aprovar registro' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'Aprovar registro' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar registro' }));
+    await confirmDialog();
+
+    expect(await screen.findByText(/Registro aprovado/)).toBeInTheDocument();
+    expect(await screen.findByText('Objeto aprovado')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Visão geral' }));
+    await screen.findByText('Objetos cadastrados', { selector: 'dt' });
+    expect(indicator('Aguardando aprovação')).toBe(String(count(OBJECT_STATUS.pendingApproval) - 1));
+    expect(indicator('Objetos disponíveis')).toBe(String(count(OBJECT_STATUS.available) + 1));
+  });
+
+  it('exige motivo para rejeitar um registro', async () => {
+    startStaffSession();
+    renderAt(`/painel/objetos/${seedPending.id}`);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rejeitar registro' }));
+    const dialog = await confirmDialog();
+
+    expect(within(dialog).getByRole('textbox')).toHaveAccessibleDescription(expect.stringContaining('Informe o motivo da decisão.'));
+
+    await confirmDialog(REASON);
+
+    expect(await screen.findByText(/Registro rejeitado/)).toBeInTheDocument();
+    expect(screen.getAllByText('Reprovado').length).toBeGreaterThan(0);
+  });
+
+  it('pesquisa e filtra objetos por status e categoria', async () => {
+    startStaffSession();
+    renderAt('/painel/objetos');
+
+    await screen.findByText(`${mockObjects.length} objetos encontrados`);
+
+    fireEvent.change(screen.getByLabelText('Status'), { target: { value: OBJECT_STATUS.pendingApproval } });
+    expect(screen.getByText(`${count(OBJECT_STATUS.pendingApproval)} objetos encontrados de ${mockObjects.length} cadastrados`)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Status'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Categoria'), { target: { value: 'eletronicos' } });
+    fireEvent.change(screen.getByLabelText('Pesquisar'), { target: { value: 'pen drive' } });
+
+    expect(screen.getByText(/^1 objeto encontrado/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pen drive prateado' })).toBeInTheDocument();
+  });
+
+  it('aprova uma solicitação, impede outra aprovação simultânea e conclui a devolução', async () => {
+    startStaffSession();
+    storeRequests([
+      { id: 'SOL-AAAA1111', requesterId: 'USR-AAAA1111' },
+      { id: 'SOL-BBBB2222', requesterId: 'USR-BBBB2222' },
+    ]);
+    const { unmount } = renderAt('/painel/solicitacoes/SOL-AAAA1111');
+
+    expect(await screen.findByText('Pessoa A')).toBeInTheDocument();
+    expect(screen.getByText('Há outra solicitação pendente para este objeto.', { exact: false })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar solicitação' }));
+    await confirmDialog();
+
+    expect(await screen.findByText(/Solicitação aprovada\. O objeto passou/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Concluir devolução' })).toBeInTheDocument();
+    unmount();
+
+    const second = renderAt('/painel/solicitacoes/SOL-BBBB2222');
+    expect(await screen.findByText(/A aprovação não está disponível porque o objeto está com status/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Aprovar solicitação' })).not.toBeInTheDocument();
+    second.unmount();
+
+    renderAt('/painel/solicitacoes/SOL-AAAA1111');
+    fireEvent.click(await screen.findByRole('button', { name: 'Concluir devolução' }));
+    await confirmDialog();
+
+    expect(await screen.findByText(/Devolução concluída/)).toBeInTheDocument();
+    expect(await screen.findByText('Solicitação encerrada. Não há ações disponíveis.')).toBeInTheDocument();
+    expect(screen.getAllByText('Devolvido').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('link', { name: 'Histórico' }));
+    expect(await screen.findByRole('cell', { name: 'Objeto devolvido' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Solicitação aprovada' })).toBeInTheDocument();
+  });
+
+  it('não permite analisar a própria solicitação', async () => {
+    startStaffSession('funcionario', 'USR-AAAA1111');
+    storeRequests([{ id: 'SOL-AAAA1111', requesterId: 'USR-AAAA1111' }]);
+    renderAt('/painel/solicitacoes/SOL-AAAA1111');
+
+    expect(await screen.findByText(/Esta solicitação foi enviada pela sua conta/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Aprovar solicitação' })).not.toBeInTheDocument();
+  });
+
+  it('permite reabrir registros devolvidos apenas para administradores', async () => {
+    startStaffSession('funcionario');
+    const { unmount } = renderAt(`/painel/objetos/${seedReturned.id}`);
+
+    expect(await screen.findByText(/Somente administradores podem reabrir/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reabrir registro' })).not.toBeInTheDocument();
+    unmount();
+
+    startStaffSession('administrador', 'USR-ADMN1111');
+    renderAt(`/painel/objetos/${seedReturned.id}`);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Reabrir registro' }));
+    await confirmDialog('Devolução registrada por engano no balcão.');
+
+    expect(await screen.findByText(/Registro reaberto com a justificativa/)).toBeInTheDocument();
+    expect(await screen.findByText('Registro reaberto', { selector: '.admin-timeline__title' })).toBeInTheDocument();
+    expect(screen.getAllByText('Disponível').length).toBeGreaterThan(0);
+  });
+
+  it('encerra a demonstração', async () => {
+    startStaffSession();
+    renderAt('/painel');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sair da demonstração' }));
+
+    expect(screen.getByRole('button', { name: 'Entrar na demonstração do painel' })).toBeInTheDocument();
+    expect(window.localStorage.getItem(STAFF_DEMO_SESSION_STORAGE_KEY)).toBeNull();
+  });
+
+  it('abre a navegação adaptada para telas menores', async () => {
+    startStaffSession();
+    renderAt('/painel');
+
+    const toggle = await screen.findByRole('button', { name: 'Abrir navegação do painel' });
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole('button', { name: 'Fechar navegação do painel' })).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByRole('link', { name: 'Solicitações' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Solicitações' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Abrir navegação do painel' })).toHaveAttribute('aria-expanded', 'false');
+  });
+});

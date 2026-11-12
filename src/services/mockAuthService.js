@@ -124,8 +124,21 @@ export function createMockAuthService({
     return { email: normalizeEmail(values.email) };
   }
 
+  async function getUserSummaries(userIds = []) {
+    await wait(delay);
+
+    const users = readUsers();
+    return Object.fromEntries(
+      [...new Set(userIds)].map((id) => {
+        const user = users.find((item) => item.id === id);
+        return [id, user ? { id: user.id, name: user.name } : null];
+      })
+    );
+  }
+
   return {
     isDemo: IS_DEMO_AUTH,
+    getUserSummaries,
     getCurrentUser,
     onAuthStateChanged,
     signUp,

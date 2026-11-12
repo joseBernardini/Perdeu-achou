@@ -4,7 +4,7 @@ import {
   REQUEST_STATUS,
   REQUEST_STATUS_LABELS,
   REQUEST_STATUS_TRANSITIONS,
-  USER_ROLES,
+  STAFF_ROLES,
 } from '../utils/constants';
 import { generatePrefixedId, isValidPrefixedId } from '../utils/objectId';
 import { normalizeRecoveryRequestForm, validateRecoveryRequestForm } from '../utils/recoveryRequestValidation';
@@ -145,7 +145,7 @@ export function createMockRecoveryRequestService({
     await wait(delay);
 
     if (!actor) throw new NotAuthenticatedError();
-    if (actor.role !== USER_ROLES.staff) {
+    if (!STAFF_ROLES.includes(actor.role)) {
       throw new PermissionDeniedError('Somente funcionários responsáveis podem alterar o status das solicitações.');
     }
 
@@ -175,8 +175,40 @@ export function createMockRecoveryRequestService({
     return clone(updated);
   }
 
+  async function listAllRequests({ status } = {}) {
+    await wait(delay);
+
+    const requests = readRequests()
+      .filter((request) => !status || request.status === status)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    return attachObjectSummaries(requests);
+  }
+
+  async function getRequestById(requestId) {
+    await wait(delay);
+
+    const request = readRequests().find((item) => item.id === requestId);
+    if (!request) throw new RequestNotFoundError(requestId);
+
+    const [withObject] = await attachObjectSummaries([request]);
+    return withObject;
+  }
+
+  async function countRequestsByStatus() {
+    await wait(delay);
+
+    return readRequests().reduce(
+      (counts, request) => ({ ...counts, [request.status]: counts[request.status] + 1 }),
+      Object.fromEntries(Object.values(REQUEST_STATUS).map((status) => [status, 0]))
+    );
+  }
+
   return {
     createRequest,
+    listAllRequests,
+    getRequestById,
+    countRequestsByStatus,
     findPendingRequest,
     listRequestsByRequester,
     changeRequestStatus,

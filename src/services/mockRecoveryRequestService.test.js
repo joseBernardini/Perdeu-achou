@@ -154,7 +154,7 @@ describe('mockRecoveryRequestService', () => {
     const approved = await service.changeRequestStatus(request.id, REQUEST_STATUS.approved, { actor: staff });
 
     expect(approved.status).toBe(REQUEST_STATUS.approved);
-    await expect(service.changeRequestStatus(request.id, REQUEST_STATUS.rejected, { actor: staff })).rejects.toBeInstanceOf(
+    await expect(service.changeRequestStatus(request.id, REQUEST_STATUS.pending, { actor: staff })).rejects.toBeInstanceOf(
       RequestStatusChangeError
     );
     await expect(service.createRequest(validInput, { requesterId: REQUESTER })).resolves.toMatchObject({
@@ -168,6 +168,8 @@ describe('mockRecoveryRequestService', () => {
     expect(canTransitionRequestStatus(REQUEST_STATUS.approved, REQUEST_STATUS.completed)).toBe(true);
     expect(canTransitionRequestStatus(REQUEST_STATUS.pending, REQUEST_STATUS.completed)).toBe(false);
     expect(canTransitionRequestStatus(REQUEST_STATUS.rejected, REQUEST_STATUS.approved)).toBe(false);
+    expect(canTransitionRequestStatus(REQUEST_STATUS.approved, REQUEST_STATUS.rejected)).toBe(true);
+    expect(canTransitionRequestStatus(REQUEST_STATUS.completed, REQUEST_STATUS.rejected)).toBe(false);
   });
 
   it('não reconhece solicitações duplicadas quando a anterior já foi analisada', async () => {

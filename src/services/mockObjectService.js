@@ -1,5 +1,5 @@
 import mockObjects from '../data/mockObjects';
-import { OBJECT_STATUS, OBJECT_STATUS_LABELS, OBJECT_STATUS_TRANSITIONS } from '../utils/constants';
+import { OBJECT_REOPEN_TRANSITIONS, OBJECT_STATUS, OBJECT_STATUS_LABELS, OBJECT_STATUS_TRANSITIONS } from '../utils/constants';
 import { generateObjectId, isValidObjectId, normalizeObjectId } from '../utils/objectId';
 import { normalizeObjectForm, validateObjectForm, OBJECT_FORM_FIELDS } from '../utils/objectValidation';
 import {
@@ -11,6 +11,7 @@ import {
 import { SIMULATED_LATENCY_MS } from './localStore';
 
 export const OBJECTS_STORAGE_KEY = 'perdeu-achou:objetos-registrados:v1';
+export const SEED_STATUS_STORAGE_KEY = 'perdeu-achou:status-objetos-demonstracao:v1';
 
 const MAX_ID_ATTEMPTS = 10;
 
@@ -79,8 +80,43 @@ export function createMockObjectService({
     }
   }
 
+  function readSeedStatusChanges() {
+    if (!storage) return {};
+
+    try {
+      const parsed = JSON.parse(storage.getItem(SEED_STATUS_STORAGE_KEY) ?? '{}');
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+      return Object.fromEntries(
+        Object.entries(parsed).filter(
+          ([id, change]) =>
+            seedIds.has(id) && change && Object.values(OBJECT_STATUS).includes(change.status) && typeof change.updatedAt === 'string'
+        )
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function writeSeedStatusChange(id, change) {
+    if (!storage) {
+      throw new ObjectStorageError('O armazenamento local do navegador não está disponível.');
+    }
+
+    try {
+      storage.setItem(SEED_STATUS_STORAGE_KEY, JSON.stringify({ ...readSeedStatusChanges(), [id]: change }));
+    } catch (error) {
+      throw new ObjectStorageError('Não foi possível salvar a alteração no armazenamento local do navegador.', error);
+    }
+  }
+
+  function getSeedRecords() {
+    const changes = readSeedStatusChanges();
+    return seedRecords.map((record) => (changes[record.id] ? { ...record, ...changes[record.id] } : record));
+  }
+
   function getAllRecords() {
-    return [...seedRecords, ...readUserRecords()];
+    return [...getSeedRecords(), ...readUserRecords()];
   }
 
   function createUniqueId(existingIds) {
@@ -175,22 +211,18 @@ export function createMockObjectService({
     return clone(updated);
   }
 
-  async function changeObjectStatus(id, nextStatus) {
+  async function changeObjectStatus(id, nextStatus, { reopen = false } = {}) {
     await wait(delay);
 
     const normalizedId = normalizeObjectId(id);
+    const current = getAllRecords().find((record) => record.id === normalizedId);
+    if (!current) throw new ObjectNotFoundError(normalizedId);
 
-    if (seedIds.has(normalizedId)) {
-      throw new ObjectUpdateNotAllowedError('Registros de demonstração não podem ser alterados.');
-    }
+    const allowed = reopen
+      ? OBJECT_REOPEN_TRANSITIONS[current.status] === nextStatus
+      : canTransitionStatus(current.status, nextStatus);
 
-    const userRecords = readUserRecords();
-    const index = userRecords.findIndex((record) => record.id === normalizedId);
-    if (index === -1) throw new ObjectNotFoundError(normalizedId);
-
-    const current = userRecords[index];
-
-    if (!canTransitionStatus(current.status, nextStatus)) {
+    if (!allowed) {
       throw new ObjectUpdateNotAllowedError(
         `Não é possível alterar o status de "${OBJECT_STATUS_LABELS[current.status]}" para "${
           OBJECT_STATUS_LABELS[nextStatus] ?? nextStatus
@@ -198,7 +230,16 @@ export function createMockObjectService({
       );
     }
 
-    const updated = { ...current, status: nextStatus, updatedAt: now().toISOString() };
+    const change = { status: nextStatus, updatedAt: now().toISOString() };
+
+    if (seedIds.has(normalizedId)) {
+      writeSeedStatusChange(normalizedId, change);
+      return clone({ ...current, ...change });
+    }
+
+    const userRecords = readUserRecords();
+    const index = userRecords.findIndex((record) => record.id === normalizedId);
+    const updated = { ...userRecords[index], ...change };
     const nextRecords = [...userRecords];
     nextRecords[index] = updated;
     writeUserRecords(nextRecords);
