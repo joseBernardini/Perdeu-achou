@@ -28,7 +28,7 @@ function HeroSection() {
           </p>
 
           <div className="hero__actions">
-            <Button variant="primary" size="lg" icon={Search} iconPosition="start" unavailable>
+            <Button to={ROUTES.objects} variant="primary" size="lg" icon={Search} iconPosition="start">
               Consultar objetos
             </Button>
             <Button variant="secondary" size="lg" icon={ArrowRight} to={`${ROUTES.home}#${SECTION_IDS.howItWorks}`}>

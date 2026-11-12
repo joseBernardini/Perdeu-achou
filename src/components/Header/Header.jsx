@@ -61,7 +61,14 @@ function Header() {
           </nav>
 
           <div className="header__actions">
-            <Button variant="secondary" size="sm" icon={Search} iconPosition="start" unavailable>
+            <Button
+              to={ROUTES.objects}
+              variant="secondary"
+              size="sm"
+              icon={Search}
+              iconPosition="start"
+              aria-current={location.pathname.startsWith(ROUTES.objects) && location.pathname !== ROUTES.registerObject ? 'page' : undefined}
+            >
               Consultar objetos
             </Button>
             <Button variant="ghost" size="sm" icon={LogIn} iconPosition="start" unavailable>

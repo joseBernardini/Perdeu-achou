@@ -51,9 +51,17 @@ describe('App', () => {
   it('identifica as ações ainda indisponíveis', () => {
     renderApp();
 
-    screen.getAllByRole('button', { name: /Consultar objetos|Entrar/ }).forEach((button) => {
-      expect(button).toHaveAttribute('aria-disabled', 'true');
-      expect(button).toHaveAccessibleDescription('Disponível em breve');
+    const loginButton = screen.getByRole('button', { name: 'Entrar' });
+
+    expect(loginButton).toHaveAttribute('aria-disabled', 'true');
+    expect(loginButton).toHaveAccessibleDescription('Disponível em breve');
+  });
+
+  it('dá acesso à consulta de objetos pela página inicial', () => {
+    renderApp();
+
+    screen.getAllByRole('link', { name: 'Consultar objetos' }).forEach((link) => {
+      expect(link).toHaveAttribute('href', '/objetos');
     });
   });
 

@@ -1,5 +1,5 @@
 import mockObjects from '../data/mockObjects';
-import { OBJECT_STATUS } from '../utils/constants';
+import { OBJECT_STATUS, OBJECT_STATUS_LABELS, OBJECT_STATUS_TRANSITIONS } from '../utils/constants';
 import { generateObjectId, isValidObjectId, normalizeObjectId } from '../utils/objectId';
 import { normalizeObjectForm, validateObjectForm, OBJECT_FORM_FIELDS } from '../utils/objectValidation';
 import {
@@ -27,6 +27,10 @@ function clone(record) {
 
 function wait(ms) {
   return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
+}
+
+export function canTransitionStatus(currentStatus, nextStatus) {
+  return (OBJECT_STATUS_TRANSITIONS[currentStatus] ?? []).includes(nextStatus);
 }
 
 function isStoredRecord(record) {
@@ -169,11 +173,53 @@ export function createMockObjectService({
     return clone(updated);
   }
 
+  async function changeObjectStatus(id, nextStatus) {
+    await wait(delay);
+
+    const normalizedId = normalizeObjectId(id);
+
+    if (seedIds.has(normalizedId)) {
+      throw new ObjectUpdateNotAllowedError('Registros de demonstração não podem ser alterados.');
+    }
+
+    const userRecords = readUserRecords();
+    const index = userRecords.findIndex((record) => record.id === normalizedId);
+    if (index === -1) throw new ObjectNotFoundError(normalizedId);
+
+    const current = userRecords[index];
+
+    if (!canTransitionStatus(current.status, nextStatus)) {
+      throw new ObjectUpdateNotAllowedError(
+        `Não é possível alterar o status de "${OBJECT_STATUS_LABELS[current.status]}" para "${
+          OBJECT_STATUS_LABELS[nextStatus] ?? nextStatus
+        }".`
+      );
+    }
+
+    const updated = { ...current, status: nextStatus, updatedAt: now().toISOString() };
+    const nextRecords = [...userRecords];
+    nextRecords[index] = updated;
+    writeUserRecords(nextRecords);
+
+    return clone(updated);
+  }
+
+  async function countObjectsByStatus() {
+    await wait(delay);
+
+    return getAllRecords().reduce(
+      (counts, record) => ({ ...counts, [record.status]: counts[record.status] + 1 }),
+      Object.fromEntries(Object.values(OBJECT_STATUS).map((status) => [status, 0]))
+    );
+  }
+
   return {
     createObject,
     listObjects,
     getObjectById,
     updateObject,
+    changeObjectStatus,
+    countObjectsByStatus,
   };
 }
 

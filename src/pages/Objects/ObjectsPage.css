@@ -1,0 +1,120 @@
+.objects-page__body {
+  padding-block: var(--space-7) var(--space-9);
+}
+
+.objects-page__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.objects-page__count {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.objects-page__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 560px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.objects-page__notice svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--color-accent);
+}
+
+.objects-page__notice ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.objects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.objects-grid > li {
+  min-width: 0;
+}
+
+.object-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 300px;
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.object-skeleton__icon,
+.object-skeleton__line {
+  display: block;
+  background-color: var(--color-surface-elevated);
+  border-radius: var(--radius-sm);
+  animation: object-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.object-skeleton__icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.object-skeleton__line {
+  width: 100%;
+  height: 12px;
+}
+
+.object-skeleton__line--short {
+  width: 30%;
+}
+
+.object-skeleton__line--title {
+  width: 70%;
+  height: 18px;
+  margin-bottom: var(--space-2);
+}
+
+.object-skeleton__line--medium {
+  width: 55%;
+}
+
+@keyframes object-skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 1024px) {
+  .objects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .objects-page__body {
+    padding-block: var(--space-5) var(--space-8);
+  }
+
+  .objects-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}

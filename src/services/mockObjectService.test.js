@@ -1,6 +1,7 @@
 import mockObjects from '../data/mockObjects';
 import { OBJECT_STATUS } from '../utils/constants';
-import { createMockObjectService, OBJECTS_STORAGE_KEY } from './mockObjectService';
+import { isValidObjectId } from '../utils/objectId';
+import { canTransitionStatus, createMockObjectService, OBJECTS_STORAGE_KEY } from './mockObjectService';
 import {
   ObjectNotFoundError,
   ObjectStorageError,
@@ -52,7 +53,7 @@ describe('mockObjectService', () => {
   it('ignora identificador e status enviados pela interface', async () => {
     const { service } = buildService();
 
-    const record = await service.createObject({ ...validInput, id: 'OBJ-ESCOLHIDO', status: OBJECT_STATUS.approved });
+    const record = await service.createObject({ ...validInput, id: 'OBJ-ESCOLHIDO', status: OBJECT_STATUS.available });
 
     expect(record.id).not.toBe('OBJ-ESCOLHIDO');
     expect(record.status).toBe(OBJECT_STATUS.pendingApproval);
@@ -106,7 +107,9 @@ describe('mockObjectService', () => {
     const pending = await service.listObjects({ status: OBJECT_STATUS.pendingApproval });
 
     expect(all).toHaveLength(mockObjects.length + 1);
-    expect(pending.map((item) => item.id)).toEqual([record.id]);
+    const seedPendingIds = mockObjects.filter((item) => item.status === OBJECT_STATUS.pendingApproval).map((item) => item.id);
+
+    expect(pending.map((item) => item.id).sort()).toEqual([record.id, ...seedPendingIds].sort());
   });
 
   it('consulta pelo identificador sem diferenciar maiúsculas e minúsculas', async () => {
@@ -145,7 +148,7 @@ describe('mockObjectService', () => {
 
     const updated = await service.updateObject(record.id, {
       location: 'Sala 205, bloco B',
-      status: OBJECT_STATUS.approved,
+      status: OBJECT_STATUS.available,
       id: 'OBJ-ZZZZZZZZ',
     });
 
@@ -164,7 +167,7 @@ describe('mockObjectService', () => {
   });
 
   it('não permite alterar registros que já saíram da análise', async () => {
-    const approvedRecord = { ...validInput, id: 'OBJ-ABCDEFGH', status: OBJECT_STATUS.approved, createdAt: 'x', updatedAt: 'x' };
+    const approvedRecord = { ...validInput, id: 'OBJ-ABCDEFGH', status: OBJECT_STATUS.available, createdAt: 'x', updatedAt: 'x' };
     const storage = createMemoryStorage({ [OBJECTS_STORAGE_KEY]: JSON.stringify([approvedRecord]) });
     const { service } = buildService({ storage });
 
@@ -199,5 +202,57 @@ describe('mockObjectService', () => {
     record.name = 'Alterado';
 
     await expect(service.getObjectById(mockObjects[0].id)).resolves.toMatchObject({ name: mockObjects[0].name });
+  });
+
+  it('mantém identificadores válidos e únicos nos dados de demonstração', () => {
+    expect(mockObjects.every((item) => isValidObjectId(item.id))).toBe(true);
+    expect(new Set(mockObjects.map((item) => item.id)).size).toBe(mockObjects.length);
+  });
+
+  it('lista apenas objetos disponíveis quando filtrado pelo status disponível', async () => {
+    const { service } = buildService();
+    await service.createObject(validInput);
+
+    const available = await service.listObjects({ status: OBJECT_STATUS.available });
+
+    expect(available.length).toBeGreaterThan(0);
+    expect(available.every((item) => item.status === OBJECT_STATUS.available)).toBe(true);
+  });
+
+  it('conta os registros por status, incluindo os criados pelo usuário', async () => {
+    const { service } = buildService();
+    await service.createObject(validInput);
+
+    const counts = await service.countObjectsByStatus();
+    const seedCount = (status) => mockObjects.filter((item) => item.status === status).length;
+
+    expect(counts[OBJECT_STATUS.pendingApproval]).toBe(seedCount(OBJECT_STATUS.pendingApproval) + 1);
+    expect(counts[OBJECT_STATUS.available]).toBe(seedCount(OBJECT_STATUS.available));
+    expect(Object.values(counts).reduce((total, value) => total + value, 0)).toBe(mockObjects.length + 1);
+  });
+
+  it('define transições de status coerentes com o fluxo de devolução', () => {
+    expect(canTransitionStatus(OBJECT_STATUS.pendingApproval, OBJECT_STATUS.available)).toBe(true);
+    expect(canTransitionStatus(OBJECT_STATUS.pendingApproval, OBJECT_STATUS.rejected)).toBe(true);
+    expect(canTransitionStatus(OBJECT_STATUS.available, OBJECT_STATUS.inReturn)).toBe(true);
+    expect(canTransitionStatus(OBJECT_STATUS.inReturn, OBJECT_STATUS.returned)).toBe(true);
+    expect(canTransitionStatus(OBJECT_STATUS.inReturn, OBJECT_STATUS.available)).toBe(true);
+    expect(canTransitionStatus(OBJECT_STATUS.pendingApproval, OBJECT_STATUS.returned)).toBe(false);
+    expect(canTransitionStatus(OBJECT_STATUS.returned, OBJECT_STATUS.available)).toBe(false);
+    expect(canTransitionStatus(OBJECT_STATUS.rejected, OBJECT_STATUS.available)).toBe(false);
+  });
+
+  it('altera o status de um registro seguindo as transições permitidas', async () => {
+    const { service } = buildService();
+    const record = await service.createObject(validInput);
+
+    const available = await service.changeObjectStatus(record.id, OBJECT_STATUS.available);
+    const listed = await service.listObjects({ status: OBJECT_STATUS.available });
+
+    expect(available.status).toBe(OBJECT_STATUS.available);
+    expect(listed.map((item) => item.id)).toContain(record.id);
+    await expect(service.changeObjectStatus(record.id, OBJECT_STATUS.returned)).rejects.toBeInstanceOf(
+      ObjectUpdateNotAllowedError
+    );
   });
 });

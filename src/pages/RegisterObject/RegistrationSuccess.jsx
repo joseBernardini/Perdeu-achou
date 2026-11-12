@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { ArrowLeft, CircleCheck, PackagePlus } from 'lucide-react';
 import Button from '../../components/Button/Button';
 import categories from '../../data/categories';
-import { OBJECT_STATUS_LABELS, ROUTES } from '../../utils/constants';
+import StatusBadge from '../../components/StatusBadge/StatusBadge';
+import { ROUTES } from '../../utils/constants';
 import { formatDateTime, formatISODate } from '../../utils/date';
 import './RegistrationSuccess.css';
 
@@ -31,7 +32,7 @@ function RegistrationSuccess({ record, onRegisterAnother }) {
       <div className="registration-success__code-block">
         <span className="registration-success__code-label">Código do objeto</span>
         <strong className="registration-success__code">{record.id}</strong>
-        <span className="registration-success__status">{OBJECT_STATUS_LABELS[record.status]}</span>
+        <StatusBadge status={record.status} className="registration-success__status" />
       </div>
 
       <dl className="registration-success__details">

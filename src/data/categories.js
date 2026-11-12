@@ -40,3 +40,7 @@ const categories = [
 ];
 
 export default categories;
+
+export function getCategoryById(categoryId) {
+  return categories.find((category) => category.id === categoryId) ?? null;
+}
