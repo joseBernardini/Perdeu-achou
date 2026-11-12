@@ -1,51 +1,8 @@
 .home {
   display: flex;
   flex-direction: column;
-  gap: var(--space-7);
 }
 
-.home__hero {
-  max-width: 680px;
-}
-
-.home__eyebrow {
-  display: inline-block;
-  margin-bottom: var(--space-3);
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-primary-light);
-  background-color: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-}
-
-.home__title {
-  margin-bottom: var(--space-4);
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
-}
-
-.home__subtitle {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
-}
-
-.home__pillars {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-4);
-}
-
-@media (max-width: 600px) {
-  .home__title {
-    font-size: var(--font-size-2xl);
-  }
-
-  .home__subtitle {
-    font-size: var(--font-size-md);
-  }
+.home section:focus {
+  outline: none;
 }

@@ -11,18 +11,31 @@
 
 .brand-logo__mark {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
-  background-color: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  color: var(--color-primary-soft);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.brand-logo__text {
+  display: flex;
+  flex-direction: column;
+  line-height: var(--line-height-tight);
 }
 
 .brand-logo__name {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brand-logo__subtitle {
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }

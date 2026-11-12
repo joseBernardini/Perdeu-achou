@@ -1,12 +1,20 @@
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import useScrollToHash from '../../hooks/useScrollToHash';
 import './Layout.css';
 
 function Layout({ children }) {
+  useScrollToHash();
+
   return (
     <div className="layout">
+      <a href="#conteudo" className="skip-link">
+        Pular para o conteúdo
+      </a>
       <Header />
-      <main className="layout__main">{children}</main>
+      <main id="conteudo" className="layout__main" tabIndex={-1}>
+        {children}
+      </main>
       <Footer />
     </div>
   );

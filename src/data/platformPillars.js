@@ -1,19 +1,21 @@
-// Descrição institucional dos pilares da plataforma, exibida na página inicial.
 const platformPillars = [
-  {
-    id: 'consultar',
-    title: 'Consultar',
-    description: 'Alunos e funcionários poderão pesquisar os objetos encontrados dentro da instituição.',
-  },
   {
     id: 'registrar',
     title: 'Registrar',
-    description: 'Quem encontrar um objeto poderá registrá-lo para que o dono consiga localizá-lo.',
+    description:
+      'Cada objeto entregue aos funcionários responsáveis recebe um registro com categoria, descrição e local onde foi encontrado.',
+  },
+  {
+    id: 'consultar',
+    title: 'Consultar',
+    description:
+      'Alunos, professores e funcionários consultam os registros em um só lugar, sem depender de avisos espalhados pela instituição.',
   },
   {
     id: 'recuperar',
     title: 'Recuperar',
-    description: 'Quem reconhecer um item como seu poderá solicitar a devolução, analisada pela equipe.',
+    description:
+      'Quem reconhecer um objeto solicita a recuperação, que é conferida pela instituição antes da devolução.',
   },
 ];
 

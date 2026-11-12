@@ -6,5 +6,8 @@
 
 .layout__main {
   flex: 1;
-  padding-block: var(--space-7);
+}
+
+.layout__main:focus {
+  outline: none;
 }
