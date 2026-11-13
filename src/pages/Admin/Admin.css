@@ -417,6 +417,7 @@
 }
 
 .admin-table-wrap {
+  position: relative;
   overflow-x: auto;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -463,6 +464,7 @@
 
 .admin-table__secondary {
   display: block;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
@@ -842,7 +844,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   .admin-table-wrap {
     overflow: visible;
     background: none;
@@ -919,7 +921,9 @@
     justify-content: center;
     width: 100%;
   }
+}
 
+@media (max-width: 760px) {
   .admin-fields {
     grid-template-columns: 1fr;
   }

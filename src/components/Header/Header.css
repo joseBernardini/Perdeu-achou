@@ -157,7 +157,6 @@
     gap: var(--space-3);
   }
 
-  .header__actions .button-wrapper,
   .header__actions .button {
     width: 100%;
   }

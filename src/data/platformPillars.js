@@ -3,7 +3,7 @@ const platformPillars = [
     id: 'registrar',
     title: 'Registrar',
     description:
-      'Cada objeto entregue aos funcionários responsáveis recebe um registro com categoria, descrição e local onde foi encontrado.',
+      'Cada objeto encontrado recebe um registro com categoria, descrição e local, conferido pelos responsáveis antes da publicação.',
   },
   {
     id: 'consultar',

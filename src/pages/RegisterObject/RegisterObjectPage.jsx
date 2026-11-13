@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import AuthGate from '../../components/AuthGate/AuthGate';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -25,8 +26,14 @@ const guidance = [
 function RegisterObjectPage() {
   const [createdRecord, setCreatedRecord] = useState(null);
   const [formKey, setFormKey] = useState(0);
+  const location = useLocation();
 
   useDocumentTitle('Registrar objeto encontrado');
+
+  useEffect(() => {
+    setCreatedRecord(null);
+    setFormKey((key) => key + 1);
+  }, [location.key]);
 
   const handleSuccess = (record) => {
     setCreatedRecord(record);

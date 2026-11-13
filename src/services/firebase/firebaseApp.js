@@ -1,8 +1,14 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { ConfigurationError } from '../serviceErrors';
-import { firebaseConfig, firebaseConfigurationError, isFirebaseConfigured } from './firebaseConfig';
+import {
+  FIREBASE_EMULATOR_HOSTS,
+  firebaseConfig,
+  firebaseConfigurationError,
+  isFirebaseConfigured,
+  useFirebaseEmulators,
+} from './firebaseConfig';
 
 let authInstance = null;
 let firestoreInstance = null;
@@ -16,12 +22,18 @@ export function getFirebaseAuth() {
   if (!authInstance) {
     authInstance = getAuth(getFirebaseApp());
     authInstance.languageCode = 'pt-BR';
+    if (useFirebaseEmulators) connectAuthEmulator(authInstance, FIREBASE_EMULATOR_HOSTS.auth, { disableWarnings: true });
   }
   return authInstance;
 }
 
 export function getDb() {
-  if (!firestoreInstance) firestoreInstance = getFirestore(getFirebaseApp());
+  if (!firestoreInstance) {
+    firestoreInstance = getFirestore(getFirebaseApp());
+    if (useFirebaseEmulators) {
+      connectFirestoreEmulator(firestoreInstance, FIREBASE_EMULATOR_HOSTS.firestoreHost, FIREBASE_EMULATOR_HOSTS.firestorePort);
+    }
+  }
   return firestoreInstance;
 }
 

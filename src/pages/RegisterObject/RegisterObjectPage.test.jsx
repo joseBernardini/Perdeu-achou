@@ -136,4 +136,16 @@ describe('RegisterObjectPage', () => {
 
     expect(screen.getByLabelText('Nome do objeto')).toHaveValue('');
   });
+
+  it('abre um formulário novo ao acessar o cadastro pelo cabeçalho após o sucesso', async () => {
+    renderPage();
+    fillValidForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar objeto' }));
+
+    await screen.findByRole('region', { name: 'Objeto registrado com sucesso' });
+    fireEvent.click(screen.getByRole('link', { name: 'Registrar objeto' }));
+
+    expect(await screen.findByLabelText('Nome do objeto')).toHaveValue('');
+    expect(screen.queryByRole('region', { name: 'Objeto registrado com sucesso' })).not.toBeInTheDocument();
+  });
 });

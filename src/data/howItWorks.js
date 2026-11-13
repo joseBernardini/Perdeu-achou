@@ -10,7 +10,7 @@ const howItWorks = [
   {
     id: 'registrado',
     title: 'O objeto é registrado',
-    description: 'O funcionário registra o item com categoria, descrição, local e data em que foi encontrado.',
+    description: 'O item é registrado na plataforma com categoria, descrição, local e data, e passa pela análise de um responsável.',
     icon: ClipboardList,
   },
   {

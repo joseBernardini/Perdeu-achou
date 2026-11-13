@@ -1,7 +1,5 @@
-import { useId } from 'react';
 import { Link } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
-import { UNAVAILABLE_MESSAGE } from '../../utils/constants';
 import './Button.css';
 
 function Button({
@@ -11,16 +9,12 @@ function Button({
   size = 'md',
   icon: Icon,
   iconPosition = 'end',
-  unavailable = false,
   loading = false,
   loadingText,
   className = '',
   ...rest
 }) {
-  const hintId = useId();
-  const classes = ['button', `button--${variant}`, `button--${size}`, unavailable && 'button--unavailable', loading && 'button--loading', className]
-    .filter(Boolean)
-    .join(' ');
+  const classes = ['button', `button--${variant}`, `button--${size}`, loading && 'button--loading', className].filter(Boolean).join(' ');
 
   const content = loading ? (
     <>
@@ -34,26 +28,6 @@ function Button({
       {Icon && iconPosition === 'end' && <Icon className="button__icon" size={18} strokeWidth={1.75} aria-hidden="true" />}
     </>
   );
-
-  if (unavailable) {
-    return (
-      <span className="button-wrapper">
-        <button
-          type="button"
-          className={classes}
-          aria-disabled="true"
-          aria-describedby={hintId}
-          onClick={(event) => event.preventDefault()}
-          {...rest}
-        >
-          {content}
-        </button>
-        <span id={hintId} role="tooltip" className="button-wrapper__hint">
-          {UNAVAILABLE_MESSAGE}
-        </span>
-      </span>
-    );
-  }
 
   if (to) {
     return (

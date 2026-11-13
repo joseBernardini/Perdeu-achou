@@ -36,8 +36,6 @@ export const NAV_LINKS = [
   { id: SECTION_IDS.categories, label: 'Categorias', to: `${ROUTES.home}#${SECTION_IDS.categories}`, hash: `#${SECTION_IDS.categories}` },
 ];
 
-export const UNAVAILABLE_MESSAGE = 'Disponível em breve';
-
 export const OBJECT_STATUS = {
   pendingApproval: 'pendente_aprovacao',
   available: 'disponivel',

@@ -1,9 +1,9 @@
 const trustPoints = [
   {
     id: 'registro-responsavel',
-    title: 'Registro feito por funcionários',
+    title: 'Registros conferidos antes da publicação',
     description:
-      'Os objetos são registrados pelos funcionários responsáveis, o que garante informações padronizadas e a guarda adequada de cada item.',
+      'Todo registro passa pela análise de um responsável da instituição antes de aparecer na consulta, o que garante informações adequadas e sem dados pessoais.',
   },
   {
     id: 'comprovacao',

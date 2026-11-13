@@ -22,6 +22,15 @@ export function getMissingFirebaseVariables(config = firebaseConfig) {
     .map(([, envName]) => envName);
 }
 
+export const useFirebaseEmulators =
+  process.env.NODE_ENV !== 'production' && process.env.REACT_APP_USE_FIREBASE_EMULATORS === 'true';
+
+export const FIREBASE_EMULATOR_HOSTS = {
+  auth: 'http://127.0.0.1:9099',
+  firestoreHost: '127.0.0.1',
+  firestorePort: 8080,
+};
+
 export const missingFirebaseVariables = getMissingFirebaseVariables();
 
 export const isFirebaseConfigured = missingFirebaseVariables.length === 0;

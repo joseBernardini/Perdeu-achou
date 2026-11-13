@@ -22,9 +22,9 @@ function HeroSection() {
           </h1>
 
           <p className="hero__description">
-            Os objetos encontrados na instituição são registrados pelos funcionários responsáveis e ficam
-            disponíveis para consulta. Quem reconhecer um item solicita a recuperação, e a devolução
-            acontece após a validação.
+            Os objetos encontrados na instituição são registrados na plataforma e conferidos pelos
+            responsáveis antes de ficarem disponíveis para consulta. Quem reconhecer um item solicita a
+            recuperação, e a devolução acontece após a validação.
           </p>
 
           <div className="hero__actions">
