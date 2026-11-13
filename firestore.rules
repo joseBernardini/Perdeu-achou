@@ -7,31 +7,87 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(uid) {
-      return signedIn() && request.auth.uid == uid;
+    function uid() {
+      return request.auth.uid;
     }
 
-    function userPath(uid) {
-      return /databases/$(database)/documents/users/$(uid);
+    function isOwner(userId) {
+      return signedIn() && uid() == userId;
+    }
+
+    function userPath(userId) {
+      return /databases/$(database)/documents/users/$(userId);
+    }
+
+    function objectPath(objectId) {
+      return /databases/$(database)/documents/objects/$(objectId);
+    }
+
+    function claimPath(claimId) {
+      return /databases/$(database)/documents/claims/$(claimId);
+    }
+
+    function pendingClaimPath(objectId, requesterId) {
+      return /databases/$(database)/documents/pendingClaims/$(objectId + '_' + requesterId);
+    }
+
+    function isActiveUser() {
+      return signedIn()
+        && exists(userPath(uid()))
+        && get(userPath(uid())).data.active == true;
     }
 
     function isAdmin() {
-      return signedIn()
-        && exists(userPath(request.auth.uid))
-        && get(userPath(request.auth.uid)).data.role == 'admin'
-        && get(userPath(request.auth.uid)).data.active == true;
+      return isActiveUser() && get(userPath(uid())).data.role == 'admin';
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function hasExactly(fields) {
+      return incoming().keys().hasAll(fields) && incoming().keys().hasOnly(fields);
+    }
+
+    function changedOnly(fields) {
+      return incoming().diff(existing()).affectedKeys().hasOnly(fields);
     }
 
     function textBetween(value, min, max) {
       return value is string && value.size() >= min && value.size() <= max;
     }
 
-    function isPublicObjectStatus(status) {
-      return status in ['disponivel', 'em_devolucao', 'devolvido'];
+    function isCode(value, prefix) {
+      return value is string && value.matches('^' + prefix + '-[0-9A-HJKMNP-TV-Z]{8}$');
     }
 
-    function objectPath(objectId) {
-      return /databases/$(database)/documents/objects/$(objectId);
+    function isPastOrTodayDate(value) {
+      return value is string
+        && value.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}$')
+        && isRealDateNotInFuture(value.split('-'));
+    }
+
+    function isRealDateNotInFuture(parts) {
+      return isRealDate(timestamp.date(int(parts[0]), int(parts[1]), int(parts[2])), parts);
+    }
+
+    function isRealDate(date, parts) {
+      return date.year() == int(parts[0])
+        && date.month() == int(parts[1])
+        && date.day() == int(parts[2])
+        && date <= request.time + duration.value(1, 'd');
+    }
+
+    function isReviewedNow() {
+      return incoming().reviewedBy == uid() && incoming().reviewedAt == request.time;
+    }
+
+    function activeClaimOf(data) {
+      return data.get('activeClaimId', null);
     }
 
     match /users/{userId} {
@@ -39,94 +95,229 @@ service cloud.firestore {
       allow list: if isAdmin();
 
       allow create: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'profileType', 'role', 'createdAt', 'active'])
-        && request.resource.data.uid == userId
-        && request.resource.data.email == request.auth.token.email
-        && textBetween(request.resource.data.displayName, 1, 120)
-        && request.resource.data.profileType in ['aluno', 'funcionario', 'nao_informado']
-        && request.resource.data.role == 'user'
-        && request.resource.data.active == true
-        && request.resource.data.createdAt == request.time;
+        && hasExactly(['uid', 'displayName', 'email', 'profileType', 'role', 'createdAt', 'active'])
+        && incoming().uid == userId
+        && incoming().email == request.auth.token.email
+        && textBetween(incoming().displayName, 3, 120)
+        && incoming().profileType in ['aluno', 'funcionario', 'nao_informado']
+        && incoming().role == 'user'
+        && incoming().active == true
+        && incoming().createdAt == request.time;
 
       allow update: if isOwner(userId)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'profileType'])
-        && textBetween(request.resource.data.displayName, 1, 120)
-        && request.resource.data.profileType in ['aluno', 'funcionario', 'nao_informado'];
+        && existing().active == true
+        && changedOnly(['displayName', 'profileType'])
+        && textBetween(incoming().displayName, 3, 120)
+        && incoming().profileType in ['aluno', 'funcionario', 'nao_informado'];
 
       allow delete: if false;
     }
 
+    function isPublicObjectStatus(status) {
+      return status in ['disponivel', 'em_devolucao', 'devolvido'];
+    }
+
+    function objectReviewDecision(objectId) {
+      return existing().status == 'pendente_aprovacao'
+        && incoming().status in ['disponivel', 'reprovado']
+        && existing().createdBy != uid()
+        && isReviewedNow()
+        && activeClaimOf(incoming()) == null;
+    }
+
+    function objectStartsReturn(objectId) {
+      return existing().status == 'disponivel'
+        && incoming().status == 'em_devolucao'
+        && changedOnly(['status', 'updatedAt', 'activeClaimId'])
+        && isCode(incoming().activeClaimId, 'SOL')
+        && getAfter(claimPath(incoming().activeClaimId)).data.status == 'aprovada'
+        && getAfter(claimPath(incoming().activeClaimId)).data.objectId == objectId;
+    }
+
+    function objectCancelsReturn(objectId) {
+      return existing().status == 'em_devolucao'
+        && incoming().status == 'disponivel'
+        && changedOnly(['status', 'updatedAt', 'activeClaimId'])
+        && activeClaimOf(incoming()) == null
+        && isCode(activeClaimOf(existing()), 'SOL')
+        && getAfter(claimPath(activeClaimOf(existing()))).data.status == 'rejeitada';
+    }
+
+    function objectCompletesReturn(objectId) {
+      return existing().status == 'em_devolucao'
+        && incoming().status == 'devolvido'
+        && changedOnly(['status', 'updatedAt', 'reviewedBy', 'reviewedAt'])
+        && isReviewedNow()
+        && isCode(activeClaimOf(existing()), 'SOL')
+        && getAfter(claimPath(activeClaimOf(existing()))).data.status == 'concluida';
+    }
+
+    function objectReopens(objectId) {
+      return isReviewedNow()
+        && activeClaimOf(incoming()) == null
+        && ((existing().status == 'devolvido' && incoming().status == 'disponivel')
+          || (existing().status == 'reprovado' && incoming().status == 'pendente_aprovacao'));
+    }
+
     match /objects/{objectId} {
       allow get: if resource != null
-        && (isPublicObjectStatus(resource.data.status)
-          || (signedIn() && resource.data.createdBy == request.auth.uid)
+        && (isPublicObjectStatus(existing().status)
+          || (signedIn() && existing().createdBy == uid())
           || isAdmin());
 
-      allow list: if isPublicObjectStatus(resource.data.status) || isAdmin();
+      allow list: if isPublicObjectStatus(existing().status)
+        || (signedIn() && existing().createdBy == uid())
+        || isAdmin();
 
-      allow create: if signedIn()
-        && objectId.matches('^OBJ-[0-9A-HJKMNP-TV-Z]{8}$')
-        && request.resource.data.keys().hasOnly([
+      allow create: if isActiveUser()
+        && isCode(objectId, 'OBJ')
+        && hasExactly([
           'code', 'title', 'category', 'description', 'locationFound', 'dateFound', 'notes',
-          'status', 'createdBy', 'createdAt', 'updatedAt', 'reviewedBy', 'reviewedAt'
+          'status', 'createdBy', 'createdAt', 'updatedAt', 'reviewedBy', 'reviewedAt', 'activeClaimId'
         ])
-        && request.resource.data.code == objectId
-        && textBetween(request.resource.data.title, 3, 80)
-        && request.resource.data.category in ['eletronicos', 'documentos', 'materiais-escolares', 'acessorios', 'vestuario', 'outros']
-        && textBetween(request.resource.data.description, 10, 500)
-        && textBetween(request.resource.data.locationFound, 3, 120)
-        && request.resource.data.dateFound is string
-        && request.resource.data.dateFound.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && textBetween(request.resource.data.notes, 0, 300)
-        && request.resource.data.status == 'pendente_aprovacao'
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time
-        && request.resource.data.reviewedBy == null
-        && request.resource.data.reviewedAt == null;
+        && incoming().code == objectId
+        && textBetween(incoming().title, 3, 80)
+        && incoming().category in ['eletronicos', 'documentos', 'materiais-escolares', 'acessorios', 'vestuario', 'outros']
+        && textBetween(incoming().description, 10, 500)
+        && textBetween(incoming().locationFound, 3, 120)
+        && isPastOrTodayDate(incoming().dateFound)
+        && textBetween(incoming().notes, 0, 300)
+        && incoming().status == 'pendente_aprovacao'
+        && incoming().createdBy == uid()
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().reviewedBy == null
+        && incoming().reviewedAt == null
+        && incoming().activeClaimId == null;
 
-      allow update: if isAdmin();
+      allow update: if isAdmin()
+        && changedOnly(['status', 'updatedAt', 'reviewedBy', 'reviewedAt', 'activeClaimId'])
+        && incoming().updatedAt == request.time
+        && (objectReviewDecision(objectId)
+          || objectStartsReturn(objectId)
+          || objectCancelsReturn(objectId)
+          || objectCompletesReturn(objectId)
+          || objectReopens(objectId));
+
       allow delete: if false;
+    }
+
+    function claimApproval(claimId) {
+      return existing().status == 'pendente'
+        && incoming().status == 'aprovada'
+        && get(objectPath(existing().objectId)).data.status == 'disponivel'
+        && getAfter(objectPath(existing().objectId)).data.status == 'em_devolucao'
+        && getAfter(objectPath(existing().objectId)).data.activeClaimId == claimId
+        && !existsAfter(pendingClaimPath(existing().objectId, existing().requesterId));
+    }
+
+    function claimRejection() {
+      return existing().status == 'pendente'
+        && incoming().status == 'rejeitada'
+        && !existsAfter(pendingClaimPath(existing().objectId, existing().requesterId));
+    }
+
+    function claimApprovalCancel() {
+      return existing().status == 'aprovada'
+        && incoming().status == 'rejeitada'
+        && getAfter(objectPath(existing().objectId)).data.status == 'disponivel';
+    }
+
+    function claimCompletion(claimId) {
+      return existing().status == 'aprovada'
+        && incoming().status == 'concluida'
+        && getAfter(objectPath(existing().objectId)).data.status == 'devolvido'
+        && getAfter(objectPath(existing().objectId)).data.activeClaimId == claimId;
     }
 
     match /claims/{claimId} {
       allow get: if signedIn()
         && resource != null
-        && (resource.data.requesterId == request.auth.uid || isAdmin());
+        && (existing().requesterId == uid() || isAdmin());
 
       allow list: if signedIn()
-        && (resource.data.requesterId == request.auth.uid || isAdmin());
+        && (existing().requesterId == uid() || isAdmin());
 
-      allow create: if signedIn()
-        && claimId.matches('^SOL-[0-9A-HJKMNP-TV-Z]{8}$')
-        && request.resource.data.keys().hasOnly([
+      allow create: if isActiveUser()
+        && isCode(claimId, 'SOL')
+        && hasExactly([
           'objectId', 'objectCode', 'requesterId', 'message', 'additionalInfo',
           'status', 'createdAt', 'updatedAt', 'reviewedBy', 'reviewedAt'
         ])
-        && request.resource.data.requesterId == request.auth.uid
-        && request.resource.data.objectCode == request.resource.data.objectId
-        && textBetween(request.resource.data.message, 30, 1000)
-        && textBetween(request.resource.data.additionalInfo, 0, 500)
-        && request.resource.data.status == 'pendente'
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time
-        && request.resource.data.reviewedBy == null
-        && request.resource.data.reviewedAt == null
-        && exists(objectPath(request.resource.data.objectId))
-        && get(objectPath(request.resource.data.objectId)).data.status == 'disponivel';
+        && incoming().requesterId == uid()
+        && isCode(incoming().objectId, 'OBJ')
+        && incoming().objectCode == incoming().objectId
+        && textBetween(incoming().message, 30, 1000)
+        && textBetween(incoming().additionalInfo, 0, 500)
+        && incoming().status == 'pendente'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().reviewedBy == null
+        && incoming().reviewedAt == null
+        && exists(objectPath(incoming().objectId))
+        && get(objectPath(incoming().objectId)).data.status == 'disponivel'
+        && getAfter(pendingClaimPath(incoming().objectId, uid())).data.claimId == claimId;
 
-      allow update: if isAdmin() && resource.data.requesterId != request.auth.uid;
+      allow update: if isAdmin()
+        && existing().requesterId != uid()
+        && changedOnly(['status', 'updatedAt', 'reviewedBy', 'reviewedAt'])
+        && incoming().updatedAt == request.time
+        && isReviewedNow()
+        && (claimApproval(claimId) || claimRejection() || claimApprovalCancel() || claimCompletion(claimId));
+
       allow delete: if false;
+    }
+
+    function ownsPendingClaim(lockId) {
+      return signedIn() && lockId.matches('^OBJ-[0-9A-HJKMNP-TV-Z]{8}_' + uid() + '$');
+    }
+
+    match /pendingClaims/{lockId} {
+      allow get: if ownsPendingClaim(lockId) || isAdmin();
+      allow list: if false;
+
+      allow create: if isActiveUser()
+        && ownsPendingClaim(lockId)
+        && hasExactly(['objectId', 'requesterId', 'claimId', 'createdAt'])
+        && incoming().requesterId == uid()
+        && lockId == incoming().objectId + '_' + uid()
+        && incoming().createdAt == request.time
+        && isCode(incoming().claimId, 'SOL')
+        && !exists(claimPath(incoming().claimId))
+        && getAfter(claimPath(incoming().claimId)).data.requesterId == uid()
+        && getAfter(claimPath(incoming().claimId)).data.objectId == incoming().objectId
+        && getAfter(claimPath(incoming().claimId)).data.status == 'pendente';
+
+      allow update: if false;
+
+      allow delete: if isAdmin()
+        && getAfter(claimPath(existing().claimId)).data.status != 'pendente';
+    }
+
+    function auditTargetPath(targetType, targetId) {
+      return targetType == 'objeto' ? objectPath(targetId) : claimPath(targetId);
     }
 
     match /auditLogs/{logId} {
       allow read: if isAdmin();
 
       allow create: if isAdmin()
-        && request.resource.data.keys().hasOnly(['type', 'targetType', 'targetId', 'actorId', 'actorRole', 'details', 'createdAt'])
-        && request.resource.data.actorId == request.auth.uid
-        && request.resource.data.actorRole == 'admin'
-        && request.resource.data.createdAt == request.time;
+        && hasExactly(['type', 'targetType', 'targetId', 'actorId', 'actorRole', 'details', 'result', 'createdAt'])
+        && incoming().type in [
+          'objeto_aprovado', 'objeto_rejeitado', 'objeto_reaberto', 'solicitacao_aprovada',
+          'solicitacao_rejeitada', 'aprovacao_cancelada', 'objeto_devolvido'
+        ]
+        && incoming().targetType in ['objeto', 'solicitacao']
+        && (isCode(incoming().targetId, 'OBJ') || isCode(incoming().targetId, 'SOL'))
+        && incoming().actorId == uid()
+        && incoming().actorRole == 'admin'
+        && incoming().result == 'sucesso'
+        && incoming().createdAt == request.time
+        && incoming().details is map
+        && incoming().details.keys().hasOnly(['from', 'to', 'reason', 'objectId', 'requestId', 'objectStatus'])
+        && incoming().details.keys().hasAll(['from', 'to'])
+        && (!('reason' in incoming().details) || textBetween(incoming().details.reason, 10, 300))
+        && getAfter(auditTargetPath(incoming().targetType, incoming().targetId)).data.status == incoming().details.to;
 
       allow update, delete: if false;
     }

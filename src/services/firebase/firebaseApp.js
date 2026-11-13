@@ -30,4 +30,9 @@ export const COLLECTIONS = {
   objects: 'objects',
   claims: 'claims',
   auditLogs: 'auditLogs',
+  pendingClaims: 'pendingClaims',
 };
+
+export function pendingClaimId(objectId, requesterId) {
+  return `${objectId}_${requesterId}`;
+}

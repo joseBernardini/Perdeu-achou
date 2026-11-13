@@ -34,6 +34,7 @@ export function AuthProvider({ children, service = authService }) {
   const signIn = useCallback((values) => service.signIn(values), [service]);
   const signUp = useCallback((values) => service.signUp(values), [service]);
   const requestPasswordReset = useCallback((values) => service.requestPasswordReset(values), [service]);
+  const updateProfile = useCallback((values) => service.updateProfile(values), [service]);
   const dismissNotice = useCallback(() => setNotice(null), []);
 
   const signOut = useCallback(async () => {
@@ -60,8 +61,9 @@ export function AuthProvider({ children, service = authService }) {
       signUp,
       signOut,
       requestPasswordReset,
+      updateProfile,
     }),
-    [state, service, notice, dismissNotice, signIn, signUp, signOut, requestPasswordReset]
+    [state, service, notice, dismissNotice, signIn, signUp, signOut, requestPasswordReset, updateProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

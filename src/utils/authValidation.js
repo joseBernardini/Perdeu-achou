@@ -64,3 +64,16 @@ export function validateSignUpForm(values = {}) {
 export function validatePasswordResetForm(values = {}) {
   return collect([['email', validateEmail(values.email)]]);
 }
+
+export function validateProfileForm(values = {}) {
+  const name = normalizeName(values.name);
+  let nameError = '';
+  if (!name) nameError = 'Informe seu nome.';
+  else if (name.length < AUTH_FIELD_LIMITS.name.min) nameError = `O nome deve ter pelo menos ${AUTH_FIELD_LIMITS.name.min} caracteres.`;
+  else if (name.length > AUTH_FIELD_LIMITS.name.max) nameError = `O nome deve ter no máximo ${AUTH_FIELD_LIMITS.name.max} caracteres.`;
+
+  return collect([
+    ['name', nameError],
+    ['profileType', SELECTABLE_PROFILE_TYPES.includes(values.profileType) ? '' : 'Selecione se você é aluno ou funcionário.'],
+  ]);
+}

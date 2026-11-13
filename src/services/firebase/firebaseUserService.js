@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { COLLECTIONS, getDb } from './firebaseApp';
 import { withServiceErrors } from './firebaseErrors';
 import { userProfileToFirestore } from './mappers';
@@ -16,6 +16,12 @@ export async function createUserProfile({ uid, displayName, email, profileType }
       doc(getDb(), COLLECTIONS.users, uid),
       userProfileToFirestore({ uid, displayName, email, profileType, timestamp: serverTimestamp() })
     );
+  });
+}
+
+export async function updateOwnProfile(uid, { displayName, profileType }) {
+  return withServiceErrors(async () => {
+    await updateDoc(doc(getDb(), COLLECTIONS.users, uid), { displayName, profileType });
   });
 }
 

@@ -68,6 +68,16 @@ function createFirebaseObjectService() {
     });
   }
 
+  async function listObjectsByCreator(creatorId) {
+    return withServiceErrors(async () => {
+      const authUser = getFirebaseAuth().currentUser;
+      if (!authUser || authUser.uid !== creatorId) throw new NotAuthenticatedError();
+
+      const snapshot = await getDocs(query(collection(getDb(), COLLECTIONS.objects), where('createdBy', '==', creatorId)));
+      return sortByCreatedAtDesc(snapshot.docs.map((item) => objectFromFirestore(item.id, item.data())));
+    });
+  }
+
   async function getObjectById(id) {
     return withServiceErrors(() => fetchObjectById(id));
   }
@@ -84,6 +94,7 @@ function createFirebaseObjectService() {
   return {
     createObject,
     listObjects,
+    listObjectsByCreator,
     getObjectById,
     countObjectsByStatus,
   };

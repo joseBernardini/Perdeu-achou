@@ -31,7 +31,7 @@ import {
   RequestStatusChangeError,
   SessionExpiredError,
 } from '../serviceErrors';
-import { COLLECTIONS, getDb, getFirebaseAuth } from './firebaseApp';
+import { COLLECTIONS, getDb, getFirebaseAuth, pendingClaimId } from './firebaseApp';
 import { withServiceErrors } from './firebaseErrors';
 import { getUserSummaries } from './firebaseUserService';
 import { auditLogFromFirestore, claimFromFirestore, objectFromFirestore } from './mappers';
@@ -77,6 +77,7 @@ function addAuditLog(transaction, { type, targetType, targetId, actor, details =
     actorId: actor.id,
     actorRole: actor.role,
     details: cleanDetails(details),
+    result: 'sucesso',
     createdAt: serverTimestamp(),
   });
 }
@@ -103,6 +104,12 @@ async function getClaimOrThrow(transactionOrNull, id) {
     if (error?.code === 'permission-denied') throw new RequestNotFoundError(id);
     throw error;
   }
+}
+
+async function readPendingClaimLock(transaction, claim) {
+  const ref = doc(getDb(), COLLECTIONS.pendingClaims, pendingClaimId(claim.objectId, claim.requesterId));
+  const snapshot = await transaction.get(ref);
+  return snapshot.exists() && snapshot.data().claimId === claim.id ? ref : null;
 }
 
 function reviewFields(actor, status) {
@@ -297,7 +304,11 @@ function createFirebaseAdminService() {
           );
         }
 
-        transaction.update(ref, reviewFields(actor, target));
+        if (!reopen && object.registeredBy === actor.id) {
+          throw new PermissionDeniedError('Não é permitido analisar um objeto registrado por você. Outro administrador precisa fazer a análise.');
+        }
+
+        transaction.update(ref, reopen ? { ...reviewFields(actor, target), activeClaimId: null } : reviewFields(actor, target));
         addAuditLog(transaction, {
           type: eventType,
           targetType: HISTORY_TARGET_TYPES.object,
@@ -341,6 +352,7 @@ function createFirebaseAdminService() {
       return runTransaction(getDb(), async (transaction) => {
         const { ref, claim } = await getClaimOrThrow(transaction, requestId);
         const { ref: objectDocRef, object } = await getObjectOrThrow(transaction, claim.objectId);
+        const lockRef = await readPendingClaimLock(transaction, claim);
 
         if (claim.requesterId === actor.id) {
           throw new PermissionDeniedError('Não é permitido analisar uma solicitação feita por você.');
@@ -354,8 +366,9 @@ function createFirebaseAdminService() {
           );
         }
 
-        transaction.update(objectDocRef, { status: OBJECT_STATUS.inReturn, updatedAt: serverTimestamp() });
+        transaction.update(objectDocRef, { status: OBJECT_STATUS.inReturn, updatedAt: serverTimestamp(), activeClaimId: claim.id });
         transaction.update(ref, reviewFields(actor, REQUEST_STATUS.approved));
+        if (lockRef) transaction.delete(lockRef);
         addAuditLog(transaction, {
           type: ADMIN_EVENT_TYPES.requestApproved,
           targetType: HISTORY_TARGET_TYPES.request,
@@ -378,6 +391,7 @@ function createFirebaseAdminService() {
       return runTransaction(getDb(), async (transaction) => {
         const { ref, claim } = await getClaimOrThrow(transaction, requestId);
         const { ref: objectDocRef, object } = await getObjectOrThrow(transaction, claim.objectId);
+        const lockRef = claim.status === REQUEST_STATUS.pending ? await readPendingClaimLock(transaction, claim) : null;
 
         if (claim.requesterId === actor.id) {
           throw new PermissionDeniedError('Não é permitido analisar uma solicitação feita por você.');
@@ -385,6 +399,7 @@ function createFirebaseAdminService() {
 
         if (claim.status === REQUEST_STATUS.pending) {
           transaction.update(ref, reviewFields(actor, REQUEST_STATUS.rejected));
+          if (lockRef) transaction.delete(lockRef);
           addAuditLog(transaction, {
             type: ADMIN_EVENT_TYPES.requestRejected,
             targetType: HISTORY_TARGET_TYPES.request,
@@ -398,7 +413,7 @@ function createFirebaseAdminService() {
         if (claim.status === REQUEST_STATUS.approved) {
           transaction.update(ref, reviewFields(actor, REQUEST_STATUS.rejected));
           if (object.status === OBJECT_STATUS.inReturn) {
-            transaction.update(objectDocRef, { status: OBJECT_STATUS.available, updatedAt: serverTimestamp() });
+            transaction.update(objectDocRef, { status: OBJECT_STATUS.available, updatedAt: serverTimestamp(), activeClaimId: null });
           }
           addAuditLog(transaction, {
             type: ADMIN_EVENT_TYPES.requestApprovalCanceled,

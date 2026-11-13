@@ -51,6 +51,7 @@ describe('conversão de dados do Firestore', () => {
       updatedAt: 'TS',
       reviewedBy: null,
       reviewedAt: null,
+      activeClaimId: null,
     });
 
     const domain = objectFromFirestore('OBJ-ABCDEFGH', {

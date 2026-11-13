@@ -1,8 +1,15 @@
 import { USER_ID_PREFIX, USER_ROLES } from '../../utils/constants';
-import { normalizeEmail, normalizeName, validatePasswordResetForm, validateSignInForm, validateSignUpForm } from '../../utils/authValidation';
+import {
+  normalizeEmail,
+  normalizeName,
+  validatePasswordResetForm,
+  validateProfileForm,
+  validateSignInForm,
+  validateSignUpForm,
+} from '../../utils/authValidation';
 import { generatePrefixedId, isValidPrefixedId } from '../../utils/objectId';
 import { SIMULATED_LATENCY_MS, createLocalStore, resolveBrowserStorage, wait } from './localStore';
-import { EmailAlreadyRegisteredError, FormValidationError, InvalidCredentialsError } from '../serviceErrors';
+import { EmailAlreadyRegisteredError, FormValidationError, InvalidCredentialsError, SessionExpiredError } from '../serviceErrors';
 
 export const DEMO_USERS_STORAGE_KEY = 'perdeu-achou:usuarios-demonstracao:v1';
 export const DEMO_SESSION_STORAGE_KEY = 'perdeu-achou:sessao-demonstracao:v1';
@@ -113,6 +120,23 @@ export function createMockAuthService({
     return toPublicUser(user);
   }
 
+  async function updateProfile(values) {
+    await wait(delay);
+
+    const errors = validateProfileForm(values);
+    if (Object.keys(errors).length > 0) throw new FormValidationError(errors);
+
+    const current = getCurrentUser();
+    if (!current) throw new SessionExpiredError();
+
+    const users = readUsers().map((user) =>
+      user.id === current.id ? { ...user, name: normalizeName(values.name), profileType: values.profileType } : user
+    );
+    usersStore.write(users);
+    notify();
+    return getCurrentUser();
+  }
+
   async function signOut() {
     await wait(delay);
     sessionStore.remove();
@@ -144,6 +168,7 @@ export function createMockAuthService({
     isDemo: IS_DEMO_AUTH,
     configurationError: null,
     getUserSummaries,
+    updateProfile,
     getCurrentUser,
     onAuthStateChanged,
     signUp,

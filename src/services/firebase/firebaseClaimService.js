@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, where, writeBatch } from 'firebase/firestore';
 import { OBJECT_STATUS, REQUEST_ID_PREFIX, REQUEST_STATUS } from '../../utils/constants';
 import { generatePrefixedId } from '../../utils/objectId';
 import { normalizeRecoveryRequestForm, validateRecoveryRequestForm } from '../../utils/recoveryRequestValidation';
@@ -9,7 +9,7 @@ import {
   ObjectNotFoundError,
   ObjectUnavailableError,
 } from '../serviceErrors';
-import { COLLECTIONS, getDb, getFirebaseAuth } from './firebaseApp';
+import { COLLECTIONS, getDb, getFirebaseAuth, pendingClaimId } from './firebaseApp';
 import { withServiceErrors } from './firebaseErrors';
 import { fetchObjectById } from './firebaseObjectService';
 import { claimFromFirestore, claimToFirestore } from './mappers';
@@ -20,17 +20,15 @@ function requireAuthenticatedUser(requesterId) {
   return authUser;
 }
 
-async function queryPendingClaim(objectId, requesterId) {
-  const snapshot = await getDocs(
-    query(
-      collection(getDb(), COLLECTIONS.claims),
-      where('requesterId', '==', requesterId),
-      where('objectId', '==', objectId),
-      where('status', '==', REQUEST_STATUS.pending)
-    )
-  );
-  const [first] = snapshot.docs;
-  return first ? claimFromFirestore(first.id, first.data()) : null;
+async function readPendingClaim(objectId, requesterId) {
+  const lock = await getDoc(doc(getDb(), COLLECTIONS.pendingClaims, pendingClaimId(objectId, requesterId)));
+  if (!lock.exists()) return null;
+
+  const snapshot = await getDoc(doc(getDb(), COLLECTIONS.claims, lock.data().claimId));
+  if (!snapshot.exists()) return null;
+
+  const claim = claimFromFirestore(snapshot.id, snapshot.data());
+  return claim.status === REQUEST_STATUS.pending ? claim : null;
 }
 
 async function summarizeObject(objectId) {
@@ -47,7 +45,7 @@ function createFirebaseClaimService() {
   async function findPendingRequest(objectId, requesterId) {
     return withServiceErrors(async () => {
       if (!requesterId || !getFirebaseAuth().currentUser) return null;
-      return queryPendingClaim(objectId, requesterId);
+      return readPendingClaim(objectId, requesterId);
     });
   }
 
@@ -61,19 +59,36 @@ function createFirebaseClaimService() {
       const object = await fetchObjectById(input.objectId);
       if (object.status !== OBJECT_STATUS.available) throw new ObjectUnavailableError(object.id);
 
-      const existing = await queryPendingClaim(object.id, authUser.uid);
+      const existing = await readPendingClaim(object.id, authUser.uid);
       if (existing) throw new DuplicateRequestError(existing);
 
       const id = generatePrefixedId(REQUEST_ID_PREFIX);
       const values = normalizeRecoveryRequestForm(input);
 
-      await setDoc(
+      const batch = writeBatch(getDb());
+      batch.set(
         doc(getDb(), COLLECTIONS.claims, id),
         claimToFirestore(
           { ...values, status: REQUEST_STATUS.pending },
           { objectId: object.id, requesterId: authUser.uid, timestamp: serverTimestamp() }
         )
       );
+      batch.set(doc(getDb(), COLLECTIONS.pendingClaims, pendingClaimId(object.id, authUser.uid)), {
+        objectId: object.id,
+        requesterId: authUser.uid,
+        claimId: id,
+        createdAt: serverTimestamp(),
+      });
+
+      try {
+        await batch.commit();
+      } catch (error) {
+        if (error?.code === 'permission-denied') {
+          const duplicate = await readPendingClaim(object.id, authUser.uid);
+          if (duplicate) throw new DuplicateRequestError(duplicate);
+        }
+        throw error;
+      }
 
       const now = new Date().toISOString();
       return {

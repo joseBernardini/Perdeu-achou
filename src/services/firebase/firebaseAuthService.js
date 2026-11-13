@@ -7,13 +7,20 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { PROFILE_TYPES } from '../../utils/constants';
-import { normalizeEmail, normalizeName, validatePasswordResetForm, validateSignInForm, validateSignUpForm } from '../../utils/authValidation';
-import { AccountDisabledError, ConfigurationError, FormValidationError } from '../serviceErrors';
+import {
+  normalizeEmail,
+  normalizeName,
+  validatePasswordResetForm,
+  validateProfileForm,
+  validateSignInForm,
+  validateSignUpForm,
+} from '../../utils/authValidation';
+import { AccountDisabledError, ConfigurationError, FormValidationError, SessionExpiredError } from '../serviceErrors';
 import { getFirebaseAuth } from './firebaseApp';
 import { firebaseConfigurationError, isFirebaseConfigured } from './firebaseConfig';
 import { toServiceError, withServiceErrors } from './firebaseErrors';
 import { toDomainUser } from './mappers';
-import { createUserProfile, getUserProfile, getUserSummaries } from './firebaseUserService';
+import { createUserProfile, getUserProfile, getUserSummaries, updateOwnProfile } from './firebaseUserService';
 
 function assertValid(errors) {
   if (Object.keys(errors).length > 0) throw new FormValidationError(errors);
@@ -157,6 +164,20 @@ function createFirebaseAuthService() {
     await withServiceErrors(() => firebaseSignOut(getFirebaseAuth()));
   }
 
+  async function updateUserProfile(values) {
+    assertConfigured();
+    assertValid(validateProfileForm(values));
+
+    const authUser = getFirebaseAuth().currentUser;
+    if (!authUser) throw new SessionExpiredError();
+
+    const displayName = normalizeName(values.name);
+    await updateOwnProfile(authUser.uid, { displayName, profileType: values.profileType });
+    await withServiceErrors(() => updateProfile(authUser, { displayName }));
+
+    return resolveUser(authUser);
+  }
+
   async function requestPasswordReset(values) {
     assertConfigured();
     assertValid(validatePasswordResetForm(values));
@@ -182,6 +203,7 @@ function createFirebaseAuthService() {
     signIn,
     signOut,
     requestPasswordReset,
+    updateProfile: updateUserProfile,
     getUserSummaries,
   };
 }

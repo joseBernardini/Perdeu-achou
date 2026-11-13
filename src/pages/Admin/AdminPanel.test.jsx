@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
 import mockObjects from '../../services/mock/mockObjects';
 import { DEMO_SESSION_STORAGE_KEY, DEMO_USERS_STORAGE_KEY } from '../../services/mock/mockAuthService';
+import { OBJECTS_STORAGE_KEY } from '../../services/mock/mockObjectService';
 import { RECOVERY_REQUESTS_STORAGE_KEY } from '../../services/mock/mockRecoveryRequestService';
 import { OBJECT_STATUS, ROUTER_FUTURE_FLAGS } from '../../utils/constants';
 
@@ -202,6 +203,32 @@ describe('Painel administrativo', () => {
 
     expect(await screen.findByText(/Esta solicitação foi enviada pela sua conta/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aprovar solicitação' })).not.toBeInTheDocument();
+  });
+
+  it('não permite ao administrador analisar o objeto que ele mesmo registrou', async () => {
+    signInAs(ADMIN);
+    window.localStorage.setItem(
+      OBJECTS_STORAGE_KEY,
+      JSON.stringify([
+        {
+          id: 'OBJ-ADMN0001',
+          name: 'Objeto do administrador',
+          category: 'outros',
+          description: 'Objeto registrado pela própria administração.',
+          location: 'Secretaria',
+          foundDate: '2026-11-10',
+          notes: '',
+          status: 'pendente_aprovacao',
+          registeredBy: ADMIN.id,
+          createdAt: '2026-11-10T10:00:00.000Z',
+          updatedAt: '2026-11-10T10:00:00.000Z',
+        },
+      ])
+    );
+    renderAt('/painel/objetos/OBJ-ADMN0001');
+
+    expect(await screen.findByText(/Este objeto foi registrado pela sua conta/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Aprovar registro' })).not.toBeInTheDocument();
   });
 
   it('permite que administradores reabram registros devolvidos com justificativa', async () => {

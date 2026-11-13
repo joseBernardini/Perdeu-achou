@@ -151,6 +151,15 @@ export function createMockObjectService({
     return clone(record);
   }
 
+  async function listObjectsByCreator(creatorId) {
+    await wait(delay);
+
+    return getAllRecords()
+      .filter((record) => creatorId && record.registeredBy === creatorId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(clone);
+  }
+
   async function listObjects({ status } = {}) {
     await wait(delay);
 
@@ -259,6 +268,7 @@ export function createMockObjectService({
   return {
     createObject,
     listObjects,
+    listObjectsByCreator,
     getObjectById,
     updateObject,
     changeObjectStatus,

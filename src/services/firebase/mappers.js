@@ -23,6 +23,7 @@ export function objectFromFirestore(id, data) {
     updatedAt: toIsoString(data.updatedAt) ?? toIsoString(data.createdAt) ?? new Date().toISOString(),
     reviewedBy: data.reviewedBy ?? null,
     reviewedAt: toIsoString(data.reviewedAt),
+    activeClaimId: data.activeClaimId ?? null,
   };
 }
 
@@ -41,6 +42,7 @@ export function objectToFirestore(values, { code, createdBy, status, timestamp }
     updatedAt: timestamp,
     reviewedBy: null,
     reviewedAt: null,
+    activeClaimId: null,
   };
 }
 

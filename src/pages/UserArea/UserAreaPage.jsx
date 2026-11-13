@@ -8,6 +8,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import recoveryRequestService from '../../services/recoveryRequestService';
 import { ROUTES } from '../../utils/constants';
+import MyObjectsSection from './MyObjectsSection';
+import ProfilePanel from './ProfilePanel';
 import RequestCard from './RequestCard';
 import { getErrorMessage } from '../../utils/errorMessages';
 import './UserAreaPage.css';
@@ -89,69 +91,75 @@ function UserAreaPage() {
       <PageHeader
         breadcrumbs={[{ label: 'Início', to: ROUTES.home }, { label: 'Minha área' }]}
         title="Minha área"
-        lead={`Olá, ${user.name}. Acompanhe aqui as solicitações de recuperação enviadas por você.`}
+        lead={`Olá, ${user.name}. Acompanhe aqui seu perfil, suas solicitações de recuperação e os objetos que você registrou.`}
       >
         <Button variant="ghost" icon={LogOut} iconPosition="start" onClick={handleSignOut} loading={isSigningOut} loadingText="Saindo">
           Sair
         </Button>
       </PageHeader>
 
-      <section className="container user-area__body" aria-labelledby="minhas-solicitacoes" aria-busy={status === 'loading'}>
-        <div className="user-area__toolbar">
-          <h2 id="minhas-solicitacoes" className="user-area__title">
-            Minhas solicitações
-          </h2>
-          {status === 'success' && requests.length > 0 && (
-            <p className="user-area__count">
-              {requests.length === 1 ? '1 solicitação' : `${requests.length} solicitações`}
+      <div className="container user-area__body">
+        <ProfilePanel />
+
+        <section className="user-area__section" aria-labelledby="minhas-solicitacoes" aria-busy={status === 'loading'}>
+          <div className="user-area__toolbar">
+            <h2 id="minhas-solicitacoes" className="user-area__title">
+              Minhas solicitações
+            </h2>
+            {status === 'success' && requests.length > 0 && (
+              <p className="user-area__count">
+                {requests.length === 1 ? '1 solicitação' : `${requests.length} solicitações`}
+              </p>
+            )}
+          </div>
+
+          {status === 'loading' && (
+            <p className="user-area__loading" role="status">
+              Carregando suas solicitações...
             </p>
           )}
-        </div>
 
-        {status === 'loading' && (
-          <p className="user-area__loading" role="status">
-            Carregando suas solicitações...
-          </p>
-        )}
+          {status === 'error' && (
+            <StatePanel
+              icon={CircleAlert}
+              tone="error"
+              role="alert"
+              headingLevel={3}
+              title="Não foi possível carregar suas solicitações"
+              description={getErrorMessage(state.error, 'Ocorreu um problema ao consultar os registros. Tente novamente em alguns instantes.')}
+            >
+              <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={loadRequests}>
+                Tentar novamente
+              </Button>
+            </StatePanel>
+          )}
 
-        {status === 'error' && (
-          <StatePanel
-            icon={CircleAlert}
-            tone="error"
-            role="alert"
-            headingLevel={3}
-            title="Não foi possível carregar suas solicitações"
-            description={getErrorMessage(state.error, 'Ocorreu um problema ao consultar os registros. Tente novamente em alguns instantes.')}
-          >
-            <Button variant="secondary" icon={RotateCw} iconPosition="start" onClick={loadRequests}>
-              Tentar novamente
-            </Button>
-          </StatePanel>
-        )}
+          {status === 'success' && requests.length === 0 && (
+            <StatePanel
+              icon={Inbox}
+              headingLevel={3}
+              title="Você ainda não enviou solicitações"
+              description="Ao reconhecer um objeto na consulta, abra os detalhes e use a opção Solicitar recuperação. A solicitação aparecerá aqui."
+            >
+              <Button to={ROUTES.objects} icon={Search} iconPosition="start">
+                Consultar objetos
+              </Button>
+            </StatePanel>
+          )}
 
-        {status === 'success' && requests.length === 0 && (
-          <StatePanel
-            icon={Inbox}
-            headingLevel={3}
-            title="Você ainda não enviou solicitações"
-            description="Ao reconhecer um objeto na consulta, abra os detalhes e use a opção Solicitar recuperação. A solicitação aparecerá aqui."
-          >
-            <Button to={ROUTES.objects} icon={Search} iconPosition="start">
-              Consultar objetos
-            </Button>
-          </StatePanel>
-        )}
+          {status === 'success' && requests.length > 0 && (
+            <ul className="user-area__list">
+              {requests.map((request) => (
+                <li key={request.id}>
+                  <RequestCard request={request} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-        {status === 'success' && requests.length > 0 && (
-          <ul className="user-area__list">
-            {requests.map((request) => (
-              <li key={request.id}>
-                <RequestCard request={request} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <MyObjectsSection userId={user.id} />
+      </div>
     </div>
   );
 }

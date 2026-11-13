@@ -82,6 +82,7 @@ function AdminObjectDetailsPage() {
   const category = getCategoryById(object.category);
   const reopenTarget = OBJECT_REOPEN_TRANSITIONS[object.status];
   const isAdmin = actor.role === USER_ROLES.admin;
+  const isOwnObject = object.registeredBy === actor.id;
   const activeRequest = requests.find((request) => request.status === REQUEST_STATUS.approved);
 
   const actions = {
@@ -232,7 +233,13 @@ function AdminObjectDetailsPage() {
               </h2>
             </div>
             <div className="admin-panel__body admin-actions">
-              {object.status === OBJECT_STATUS.pendingApproval && (
+              {object.status === OBJECT_STATUS.pendingApproval && isOwnObject && (
+                <p className="admin-actions__note">
+                  Este objeto foi registrado pela sua conta. Outro administrador precisa aprovar ou rejeitar o registro.
+                </p>
+              )}
+
+              {object.status === OBJECT_STATUS.pendingApproval && !isOwnObject && (
                 <>
                   <p className="admin-actions__note">Confira se a descrição permite a identificação sem expor dados pessoais.</p>
                   <Button icon={CircleCheck} iconPosition="start" onClick={() => setDialog('approve')}>

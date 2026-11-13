@@ -95,6 +95,24 @@ describe('mockAdminService', () => {
     expect(mockObjects.find((item) => item.id === seedPending.id).status).toBe(OBJECT_STATUS.pendingApproval);
   });
 
+  it('impede o administrador de analisar um objeto registrado por ele', async () => {
+    const { admin: service, objects } = buildServices();
+    const created = await objects.createObject(
+      {
+        name: 'Pen drive prateado',
+        category: 'eletronicos',
+        description: 'Pen drive prateado com tampa giratória.',
+        location: 'Laboratório',
+        foundDate: '2026-11-10',
+      },
+      { registeredBy: staff.id }
+    );
+
+    await expect(service.approveObject(created.id, staff)).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(service.rejectObject(created.id, staff, REASON)).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(service.approveObject(created.id, admin)).resolves.toMatchObject({ status: OBJECT_STATUS.available });
+  });
+
   it('rejeita registros pendentes exigindo motivo', async () => {
     const { admin: service } = buildServices();
 

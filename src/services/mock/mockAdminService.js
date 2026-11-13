@@ -140,6 +140,9 @@ export function createMockAdminService({
     if (current.status !== OBJECT_STATUS.pendingApproval) {
       throw new ObjectUpdateNotAllowedError('Somente registros pendentes de aprovação podem ser aprovados.');
     }
+    if (current.registeredBy === actor.id) {
+      throw new PermissionDeniedError('Não é permitido analisar um objeto registrado por você. Outro administrador precisa fazer a análise.');
+    }
 
     const updated = await objects.changeObjectStatus(current.id, OBJECT_STATUS.available);
     history.recordEvent({
@@ -161,6 +164,9 @@ export function createMockAdminService({
     const current = await objects.getObjectById(objectId);
     if (current.status !== OBJECT_STATUS.pendingApproval) {
       throw new ObjectUpdateNotAllowedError('Somente registros pendentes de aprovação podem ser rejeitados.');
+    }
+    if (current.registeredBy === actor.id) {
+      throw new PermissionDeniedError('Não é permitido analisar um objeto registrado por você. Outro administrador precisa fazer a análise.');
     }
 
     const updated = await objects.changeObjectStatus(current.id, OBJECT_STATUS.rejected);
